@@ -314,10 +314,10 @@ function renderHome() {
       <div class="grid">${cards}</div>
     </div>
     <div class="filters">
-      <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review">復習待ち (${all.review})</button>
-      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh">未解答 (${all.fresh})</button>
       <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks">🔖 記録 (${marks})</button>
       <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong">✕ 誤答のみ</button>
+      <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review">🔄 復習待ち (${all.review})</button>
+      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh">○ 未解答 (${all.fresh})</button>
     </div>
   </div>` + sheetHtml();
 }
