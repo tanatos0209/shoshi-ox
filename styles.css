@@ -217,13 +217,16 @@ main{margin-top:14px}
 .btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .grasp{margin:4px 0 12px}
 .grasp-label{display:block;margin:0 0 6px;font-size:.78rem;font-weight:700;letter-spacing:.08em;color:var(--dim)}
-.grasp-row{display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:8px}
+.grasp-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .grasp-btn{
-  appearance:none;min-height:44px;min-width:44px;padding:0;
-  font:inherit;font-size:1.05rem;font-weight:700;
+  appearance:none;min-height:44px;min-width:0;padding:8px 2px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font:inherit;line-height:1.25;
   border-radius:12px;border:1px solid var(--line-strong);
   background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;
 }
+.grasp-n{font-size:1rem;font-weight:700}
+.grasp-t{font-size:.65rem;font-weight:600;text-align:center}
 .grasp-btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 .btn-row .btn:not(.block){flex:1 1 auto}
 .score{

@@ -171,9 +171,9 @@ function viewQuestion() {
       <div class="article">（${esc(q.article)}）</div></div>
       <div class="grasp" role="group" aria-label="理解度">
         <span class="grasp-label">理解度</span>
-        <div class="grasp-row">${[5,4,3,2,1].map(n => {
+        <div class="grasp-row">${[[5,"すぐ解ける"],[4,"だいたい分かる"],[3,"ふつう"],[2,"あやしい"],[1,"わからない"]].map(([n, label]) => {
           const on = store.understanding && store.understanding[q.id] === n;
-          return `<button type="button" class="grasp-btn" data-act="rate" data-n="${n}" aria-pressed="${on ? "true" : "false"}" aria-label="理解度${n}">${n}</button>`;
+          return `<button type="button" class="grasp-btn" data-act="rate" data-n="${n}" aria-pressed="${on ? "true" : "false"}" aria-label="${n} ${label}"><span class="grasp-n">${n}</span><span class="grasp-t">${label}</span></button>`;
         }).join("")}</div>
       </div>
       <button class="btn primary block" data-act="next">${c.index >= c.ids.length - 1 ? "結果を見る" : "次の問へ"}</button>`;
