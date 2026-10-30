@@ -64,7 +64,7 @@ function emptyStore() {
   return {
     version: 3,
     progress: {},
-    stats: { streakDays: 0, todayCount: 0, dailyGoal: GOAL, lastDate: "" },
+    stats: { streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" },
     ui: { tintQuestionId: null, wrongOnly: false, bookmarksOnly: false },
     drill: null,
     view: "home",
@@ -108,10 +108,20 @@ function migrate(raw) {
   });
   const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false }, raw.ui || {});
   delete ui.mode;
+  const stats = Object.assign({ streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" }, raw.stats || {});
+  if (stats.lastDate === todayKey()) {
+    const fromLogs = answeredIdsOn(progress, stats.lastDate);
+    if (fromLogs) {
+      stats.todayIds = fromLogs;
+      stats.todayCount = fromLogs.length;
+    }
+  } else {
+    stats.todayIds = [];
+  }
   return {
     version: 3,
     progress,
-    stats: Object.assign({ streakDays: 0, todayCount: 0, dailyGoal: GOAL, lastDate: "" }, raw.stats || {}),
+    stats,
     ui,
     drill: raw.version >= 3 ? raw.drill || null : null,
     view: raw.version >= 3 && raw.view ? raw.view : "home",
@@ -180,17 +190,34 @@ function todayQueue() {
   return review.concat(fresh);
 }
 
-function stampToday() {
+function answeredIdsOn(progress, day) {
+  const ids = [];
+  let saw = false;
+  Object.entries(progress || {}).forEach(([id, p]) => {
+    if ((p.log || []).some(e => typeof e.at === "string" && e.at.slice(0, 10) === day)) {
+      saw = true;
+      ids.push(id);
+    }
+  });
+  return saw ? ids : null;
+}
+function stampToday(id) {
   const t = todayKey();
   const s = store.stats;
-  if (s.lastDate === t) s.todayCount++;
-  else {
+  if (s.lastDate !== t) {
     const y = new Date();
     y.setDate(y.getDate() - 1);
     s.streakDays = s.lastDate === dayKey(y) ? (s.streakDays || 0) + 1 : 1;
-    s.todayCount = 1;
     s.lastDate = t;
+    s.todayIds = [];
+    s.todayCount = 0;
   }
+  if (!Array.isArray(s.todayIds)) s.todayIds = [];
+  if (!s.todayIds.includes(id)) s.todayIds.push(id);
+  s.todayCount = s.todayIds.length;
+}
+function shownToday() {
+  return store.stats.lastDate === todayKey() ? (store.stats.todayCount || 0) : 0;
 }
 function schedule(id, understanding) {
   const p = ensure(id);
@@ -251,7 +278,7 @@ function iconUser() {
 function renderHome() {
   const all = counts(QUESTIONS);
   const goal = store.stats.dailyGoal || GOAL;
-  const pct = Math.round(Math.min(100, (store.stats.todayCount || 0) / goal * 100));
+  const pct = Math.round(Math.min(100, shownToday() / goal * 100));
   const cards = SUBJECTS.map(s => {
     const list = qsIn(s.name);
     const rate = masterRate(list);
@@ -271,7 +298,7 @@ function renderHome() {
     <div class="scroll">
       <div class="summary">
         <p class="streak">連続 ${store.stats.streakDays || 0} 日</p>
-        <p class="goal">今日 ${store.stats.todayCount || 0}問 <span>（目標 ${goal}問）</span></p>
+        <p class="goal">今日 ${shownToday()}問 <span>（目標 ${goal}問）</span></p>
         ${bar(pct)}
       </div>
       <button class="cta" type="button" data-act="start-today">▶ 今日の学習を開始</button>
@@ -378,7 +405,7 @@ function renderHistory() {
       <span></span>
     </header>
     <div class="scroll">
-      <p class="streak">連続 ${store.stats.streakDays || 0} 日　今日 ${store.stats.todayCount || 0}問（目標 ${store.stats.dailyGoal || GOAL}問）</p>
+      <p class="streak">連続 ${store.stats.streakDays || 0} 日　今日 ${shownToday()}問（目標 ${store.stats.dailyGoal || GOAL}問）</p>
       ${rows}
     </div>
   </div>`;
@@ -396,7 +423,7 @@ function renderSettings() {
       <label class="set-label" for="daily-goal">1日の目標問数</label>
       <input id="daily-goal" class="set-input" type="number" inputmode="numeric" min="1" max="999" step="1" value="${goal}" data-act="goal" aria-describedby="goal-note">
       <p id="goal-note" class="cta-sub">1日の目標問数（自分で決められます）。試験の決まりではありません。</p>
-      <p class="set-preview">ホームの表示は 今日 ${store.stats.todayCount || 0}問（目標 ${goal}問）です。</p>
+      <p class="set-preview">ホームの表示は 今日 ${shownToday()}問（目標 ${goal}問）です。</p>
       <button class="danger" type="button" data-act="reset-data">学習データを消去</button>
       <p class="cta-sub">解答・理解度・ブックマーク・復習予定を消します。目標問数は残します。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
@@ -470,6 +497,7 @@ document.getElementById("app").addEventListener("click", e => {
     store.progress = {};
     store.stats.streakDays = 0;
     store.stats.todayCount = 0;
+    store.stats.todayIds = [];
     store.stats.lastDate = "";
     store.stats.dailyGoal = goal;
     store.drill = null;
@@ -508,7 +536,7 @@ document.getElementById("app").addEventListener("input", e => {
   if (!(n >= 1 && n <= 999)) return;
   store.stats.dailyGoal = n;
   const preview = document.querySelector(".set-preview");
-  if (preview) preview.textContent = `ホームの表示は 今日 ${store.stats.todayCount || 0}問（目標 ${n}問）です。`;
+  if (preview) preview.textContent = `ホームの表示は 今日 ${shownToday()}問（目標 ${n}問）です。`;
   save();
 });
 document.getElementById("app").addEventListener("change", e => {
@@ -540,7 +568,7 @@ function reveal(sayYes) {
   p.lastResult = d.correct;
   p.log = p.log || [];
   p.log.push({ at: new Date().toISOString(), correct: d.correct, picked: sayYes ? "o" : "x", seconds: d.seconds });
-  stampToday();
+  stampToday(q.id);
   save(); render();
 }
 function snapshotDrill() {
