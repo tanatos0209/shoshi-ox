@@ -265,7 +265,7 @@ function renderHome() {
   app.innerHTML = `<div class="screen home">
     <header class="topbar">
       <div class="brand-lock"><img src="icon-192.png" width="40" height="40" alt=""><h1>司法書士 AI択一対策</h1></div>
-      <button class="icon-btn" type="button" aria-label="設定" data-act="noop">${iconGear()}</button>
+      <button class="icon-btn" type="button" aria-label="設定" data-act="open-settings">${iconGear()}</button>
       <button class="icon-btn" type="button" aria-label="プロフィール" data-act="noop">${iconUser()}</button>
     </header>
     <div class="scroll">
@@ -379,8 +379,28 @@ function renderHistory() {
   </div>`;
 }
 
+function renderSettings() {
+  const goal = store.stats.dailyGoal || GOAL;
+  app.innerHTML = `<div class="screen">
+    <header class="qnav">
+      <button type="button" data-act="settings-back">← 戻る</button>
+      <h2>設定</h2>
+      <span></span>
+    </header>
+    <div class="scroll">
+      <label class="set-label" for="daily-goal">1日の目標問数</label>
+      <input id="daily-goal" class="set-input" type="number" inputmode="numeric" min="1" max="999" step="1" value="${goal}" data-act="goal" aria-describedby="goal-note">
+      <p id="goal-note" class="cta-sub">1日の目標問数（自分で決められます）。試験の決まりではありません。</p>
+      <p class="set-preview">ホームの表示は ${store.stats.todayCount || 0} / ${goal}問 です。</p>
+      <button class="danger" type="button" data-act="reset-data">学習データを消去</button>
+      <p class="cta-sub">解答・理解度・ブックマーク・復習予定を消します。目標問数は残します。</p>
+      ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
+    </div>
+  </div>`;
+}
 function render() {
-  if (store.view === "quiz" && store.drill) renderQuiz();
+  if (store.view === "settings") renderSettings();
+  else if (store.view === "quiz" && store.drill) renderQuiz();
   else if (store.view === "history") renderHistory();
   else renderHome();
   applyTint();
@@ -421,6 +441,34 @@ document.getElementById("app").addEventListener("click", e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   if (act === "noop") return;
+  if (act === "open-settings") {
+    store.settingsFrom = store.view === "settings" ? (store.settingsFrom || "home") : store.view;
+    store.sheet = null;
+    store.view = "settings";
+    save(); render();
+    return;
+  }
+  if (act === "settings-back") {
+    store.view = store.settingsFrom && store.settingsFrom !== "settings" ? store.settingsFrom : "home";
+    store.toast = "";
+    save(); render();
+    return;
+  }
+  if (act === "reset-data") {
+    if (!confirm("解答・理解度・ブックマーク・復習予定を消去します。1日の目標問数は残します。よろしいですか？")) return;
+    const goal = store.stats.dailyGoal || GOAL;
+    store.progress = {};
+    store.stats.streakDays = 0;
+    store.stats.todayCount = 0;
+    store.stats.lastDate = "";
+    store.stats.dailyGoal = goal;
+    store.drill = null;
+    if (store.ui) store.ui.tintQuestionId = null;
+    store.toast = "学習データを消去しました。目標問数は残しています。";
+    store.view = "settings";
+    save(); render();
+    return;
+  }
   if (act === "open-subject") { store.sheet = b.dataset.id; store.toast = ""; render(); return; }
   if (act === "close-sheet") { store.sheet = null; render(); return; }
   if (act === "toggle-wrong") { store.ui.wrongOnly = !store.ui.wrongOnly; save(); render(); return; }
@@ -440,6 +488,16 @@ document.getElementById("app").addEventListener("click", e => {
   }
   if (act === "pick") { reveal(b.dataset.val === "1"); return; }
   if (act === "rate") { commitRate(Number(b.dataset.n)); return; }
+});
+document.getElementById("app").addEventListener("input", e => {
+  const el = e.target.closest("[data-act='goal']");
+  if (!el) return;
+  const n = Math.round(Number(el.value));
+  if (!(n >= 1 && n <= 999)) return;
+  store.stats.dailyGoal = n;
+  const preview = document.querySelector(".set-preview");
+  if (preview) preview.textContent = `ホームの表示は ${store.stats.todayCount || 0} / ${n}問 です。`;
+  save();
 });
 document.getElementById("app").addEventListener("change", e => {
   const s = e.target.closest("[data-act='scope']");

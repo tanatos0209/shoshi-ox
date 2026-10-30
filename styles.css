@@ -90,6 +90,10 @@ button{cursor:pointer}
 .rates .r{background:#6a2a30}
 .hint{margin:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));text-align:center;color:var(--sub);font-size:.72rem}
 .toast{margin:8px 16px;color:var(--gold);font-size:.85rem;text-align:center}
+.set-label{display:block;margin:16px 0 8px;font-weight:700}
+.set-input{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#12261c;color:var(--text);font-size:1.25rem;font-weight:700;padding:8px 12px}
+.set-preview{color:var(--sub);font-size:.88rem}
+.danger{width:100%;min-height:48px;margin-top:18px;border-radius:12px;border:1px solid var(--red);background:transparent;color:#ffb4b0;font-weight:800}
 .hist-item{padding:12px 0;border-top:1px solid rgba(212,175,106,.18)}
 .hist-item b{display:block}
 html.tint-3,body.tint-3{background:radial-gradient(880px 380px at 50% -8%,rgba(46,140,90,.35),transparent 62%),#082a16}
