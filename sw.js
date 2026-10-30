@@ -1,12 +1,12 @@
 /* 司法書士 択一○× service worker
- * - シェル（HTML/CSS/アイコン）はキャッシュ、更新があれば裏で取り直し（stale-while-revalidate）
- * - app.js（問題データ入り）と index.html はネットワーク優先 → 開き直す／再読み込みで最新の問題が出る
- * - オフライン時はキャッシュで動作
+ * - app.js（問題データ入り）・index.html・CSS・アイコンはネットワーク優先
+ *   → 再読み込みで見た目と問題が更新される。オフライン時はキャッシュで動作
  */
-const CACHE = "shoshi-ox-shell-v1";
+const CACHE = "shoshi-ox-shell-v2";
 const SHELL = ["./", "./index.html", "./app.js", "./styles.css", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
-const NETWORK_FIRST = [/\/app\.js$/, /\/index\.html$/, /\/$/, /\/manifest\.webmanifest$/];
+const NETWORK_FIRST = [/\/app\.js$/, /\/index\.html$/, /\/$/, /\/manifest\.webmanifest$/,
+  /\/styles\.css$/, /\/icon-.*\.png$/, /\/apple-touch-icon\.png$/];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
