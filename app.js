@@ -348,7 +348,7 @@ function renderQuiz() {
         <option value="review" ${d.scope === "review" ? "selected" : ""}>要復習</option>
         <option value="wrong" ${d.scope === "wrong" ? "selected" : ""}>誤答のみ</option>
       </select>
-      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="記録" aria-pressed="${p.bookmarked ? "true" : "false"}">🔖</button>
+      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "記録を外す" : "記録する"}" aria-pressed="${p.bookmarked ? "true" : "false"}">${p.bookmarked ? "★" : "☆"}</button>
     </div>
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
@@ -437,7 +437,8 @@ function filteredIds(sourceIds, scope) {
 }
 
 document.getElementById("app").addEventListener("click", e => {
-  const b = e.target.closest("[data-act]");
+  const origin = e.target && e.target.closest ? e.target : (e.target && e.target.parentElement);
+  const b = origin && origin.closest ? origin.closest("[data-act]") : null;
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   if (act === "noop") return;
