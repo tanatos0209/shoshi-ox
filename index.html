@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14080c">
+<meta name="theme-color" content="#0D231A">
 <title>AI択一対策</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="manifest" href="manifest.webmanifest">
@@ -16,28 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="AI択一対策">
 </head>
 <body>
-<div class="wrap">
-  <header class="lcd-head">
-    <div class="brand">
-      <img src="icon-192.png" width="44" height="44" alt="">
-      <div>
-        <p class="kicker">司法書士</p>
-        <h1>AI択一対策</h1>
-      </div>
-    </div>
-    <p class="sub">民法・総則・私権の主体の肢です。○か×を押すと、正誤と解説が表示されます。</p>
-    <nav class="tabs" role="tablist" aria-label="画面">
-      <button class="tab" data-mode="practice" role="tab">練習</button>
-      <button class="tab" data-mode="weak" role="tab">弱点</button>
-      <button class="tab" data-mode="review" role="tab">結果</button>
-    </nav>
-  </header>
-  <main id="app" aria-live="polite"></main>
-  <footer class="foot">
-    <span id="seedinfo"></span>
-    <span>学習履歴はこの端末のブラウザに保存されます。</span>
-  </footer>
-</div>
+<div id="app"></div>
 <script src="app.js"></script>
 <script>
 if ("serviceWorker" in navigator) {
