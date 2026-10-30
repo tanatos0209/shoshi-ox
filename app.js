@@ -199,14 +199,14 @@ function reconcileToday(stats, progress) {
   const cap = QUESTIONS.length;
   if (stats.lastDate !== t) {
     stats.todayIds = [];
+    stats.todayCount = 0;
     return;
   }
   const fromLogs = answeredIdsOn(progress, t);
-  const fromSet = (Array.isArray(stats.todayIds) ? stats.todayIds : []).filter(id => QMAP[id]);
-  const ids = fromLogs.length ? fromLogs : [...new Set(fromSet)];
+  const fromSet = [...new Set((Array.isArray(stats.todayIds) ? stats.todayIds : []).filter(id => QMAP[id]))];
+  const ids = (fromLogs.length ? fromLogs : fromSet).slice(0, cap);
   stats.todayIds = ids;
-  stats.todayCount = Math.min(ids.length || Math.max(0, stats.todayCount || 0), cap);
-  if (ids.length) stats.todayCount = ids.length;
+  stats.todayCount = Math.min(ids.length ? ids.length : (stats.todayCount || 0), cap);
 }
 function stampToday(id) {
   const t = todayKey();
@@ -224,7 +224,10 @@ function stampToday(id) {
   s.todayCount = Math.min(s.todayIds.length, QUESTIONS.length);
 }
 function shownToday() {
-  return store.stats.lastDate === todayKey() ? (store.stats.todayCount || 0) : 0;
+  const before = store.stats.todayCount;
+  reconcileToday(store.stats, store.progress);
+  if (store.stats.todayCount !== before) save();
+  return Math.min(store.stats.todayCount || 0, QUESTIONS.length);
 }
 function schedule(id, understanding) {
   const p = ensure(id);
