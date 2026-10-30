@@ -271,11 +271,12 @@ function renderHome() {
     <div class="scroll">
       <div class="summary">
         <p class="streak">連続 ${store.stats.streakDays || 0} 日</p>
-        <p class="goal">${store.stats.todayCount || 0} <span>/ ${goal}問</span></p>
+        <p class="goal">今日 ${store.stats.todayCount || 0}問 <span>（目標 ${goal}問）</span></p>
         ${bar(pct)}
       </div>
       <button class="cta" type="button" data-act="start-today">▶ 今日の学習を開始</button>
-      <p class="cta-sub">要復習 ${all.review}問 ｜ 新規 ${all.fresh}問（忘却曲線）</p>
+      <p class="cta-sub">復習待ち ${all.review}問 ｜ 未解答 ${all.fresh}問</p>
+      <p class="cta-help">復習待ちは、間違えた問題と復習日が来た問題です。未解答は、まだ解いていない問題です。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
       <div class="grid">${cards}</div>
     </div>
@@ -304,7 +305,7 @@ function sheetHtml() {
     <div class="sheet" role="dialog" aria-label="${esc(s.name)}">
       <div class="sheet-h"><h2>${esc(s.name)}（全${s.fields.length}科目）</h2><button type="button" data-act="close-sheet" aria-label="閉じる">✕</button></div>
       <button class="cta" type="button" data-act="start-subject" data-subject="${esc(s.name)}" ${list.length ? "" : "disabled"}>▶ ${esc(s.name)}をまとめて開始</button>
-      <p class="cta-sub">要復習: ${c.review}問 / 新規: ${c.fresh}問</p>
+      <p class="cta-sub">復習待ち: ${c.review}問 / 未解答: ${c.fresh}問</p>
       ${rows}
     </div>`;
 }
@@ -329,7 +330,7 @@ function renderQuiz() {
       <button type="button" class="b" data-act="rate" data-n="2"><span class="n">2</span><span class="t">ふつう</span></button>
       <button type="button" class="r" data-act="rate" data-n="1"><span class="n">1</span><span class="t">わからない</span></button>
     </div>
-    <p class="hint">タップすると記録して、自動的に次の問題へ進みます（忘却曲線に基づく復習間隔）</p>`
+    <p class="hint">タップすると記録して、次の問題へ進みます。復習の間隔は自動で決まります。</p>`
     : `<div class="ox">
       <button type="button" class="o" data-act="pick" data-val="1" aria-label="正しい">○</button>
       <button type="button" class="x" data-act="pick" data-val="0" aria-label="誤り">✕</button>
@@ -345,10 +346,10 @@ function renderQuiz() {
       <span class="sp"></span>
       <select data-act="scope" aria-label="出題範囲">
         <option value="all" ${d.scope === "all" ? "selected" : ""}>全問</option>
-        <option value="review" ${d.scope === "review" ? "selected" : ""}>要復習</option>
+        <option value="review" ${d.scope === "review" ? "selected" : ""}>復習待ち</option>
         <option value="wrong" ${d.scope === "wrong" ? "selected" : ""}>誤答のみ</option>
       </select>
-      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "記録を外す" : "記録する"}" aria-pressed="${p.bookmarked ? "true" : "false"}">${p.bookmarked ? "★" : "☆"}</button>
+      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "記録を外す" : "記録する"}" aria-pressed="${p.bookmarked ? "true" : "false"}">🔖</button>
     </div>
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
@@ -373,7 +374,7 @@ function renderHistory() {
       <span></span>
     </header>
     <div class="scroll">
-      <p class="streak">連続 ${store.stats.streakDays || 0} 日　本日 ${store.stats.todayCount || 0} / ${store.stats.dailyGoal || GOAL}問</p>
+      <p class="streak">連続 ${store.stats.streakDays || 0} 日　今日 ${store.stats.todayCount || 0}問（目標 ${store.stats.dailyGoal || GOAL}問）</p>
       ${rows}
     </div>
   </div>`;
@@ -391,7 +392,7 @@ function renderSettings() {
       <label class="set-label" for="daily-goal">1日の目標問数</label>
       <input id="daily-goal" class="set-input" type="number" inputmode="numeric" min="1" max="999" step="1" value="${goal}" data-act="goal" aria-describedby="goal-note">
       <p id="goal-note" class="cta-sub">1日の目標問数（自分で決められます）。試験の決まりではありません。</p>
-      <p class="set-preview">ホームの表示は ${store.stats.todayCount || 0} / ${goal}問 です。</p>
+      <p class="set-preview">ホームの表示は 今日 ${store.stats.todayCount || 0}問（目標 ${goal}問）です。</p>
       <button class="danger" type="button" data-act="reset-data">学習データを消去</button>
       <p class="cta-sub">解答・理解度・ブックマーク・復習予定を消します。目標問数は残します。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
@@ -497,7 +498,7 @@ document.getElementById("app").addEventListener("input", e => {
   if (!(n >= 1 && n <= 999)) return;
   store.stats.dailyGoal = n;
   const preview = document.querySelector(".set-preview");
-  if (preview) preview.textContent = `ホームの表示は ${store.stats.todayCount || 0} / ${n}問 です。`;
+  if (preview) preview.textContent = `ホームの表示は 今日 ${store.stats.todayCount || 0}問（目標 ${n}問）です。`;
   save();
 });
 document.getElementById("app").addEventListener("change", e => {

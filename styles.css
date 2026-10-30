@@ -32,8 +32,9 @@ button{cursor:pointer}
 .icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
 .summary{padding:8px 4px 14px}
 .streak{margin:0;color:var(--sub);font-size:.92rem}
-.goal{margin:2px 0 10px;font-size:2rem;font-weight:700;letter-spacing:.02em;line-height:1.15}
-.goal span{font-size:1.05rem;font-weight:600;color:var(--sub)}
+.goal{margin:2px 0 10px;font-size:1.65rem;font-weight:700;letter-spacing:.02em;line-height:1.25}
+.goal span{font-size:1rem;font-weight:600;color:var(--sub)}
+.cta-help{margin:-4px 0 14px;text-align:center;color:var(--sub);font-size:.75rem;line-height:1.45}
 .bar{height:3px;border-radius:99px;background:rgba(200,169,106,.28);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
 .cta{width:100%;border:0;border-radius:14px;background:var(--gold);color:var(--gold-ink);font-size:1.05rem;font-weight:800;min-height:54px;padding:12px 16px}
