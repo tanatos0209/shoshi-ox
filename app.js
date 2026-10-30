@@ -104,6 +104,7 @@ const fmt = iso => {
 
 function startSession(kind, ids) {
   store.current = { id: "s" + Date.now(), kind, startedAt: new Date().toISOString(), ids, index: 0, picked: null, results: {} };
+  noteQuestion(ids[0]);
   save();
 }
 function finishSession() {
@@ -143,13 +144,14 @@ function rate(n) {
   if (!(n >= 1 && n <= 3)) return;
   if (!store.understanding) store.understanding = {};
   store.understanding[qid] = n;
+  noteQuestion(qid);
   save(); render();
 }
 function next() {
   const c = store.current;
   if (!c) return;
-  if (c.index >= c.ids.length - 1) { finishSession(); setMode("review"); return; }
-  c.index++; c.picked = null; save(); render();
+  if (c.index >= c.ids.length - 1) { noteQuestion(c.ids[c.index]); finishSession(); setMode("review"); return; }
+  c.index++; c.picked = null; noteQuestion(c.ids[c.index]); save(); render();
 }
 function begin(kind, ids) {
   if (store.current && Object.keys(store.current.results).length) finishSession();
@@ -274,27 +276,19 @@ function ratingOf(id) {
   const n = Number(store.understanding && store.understanding[id]);
   return n >= 1 && n <= 3 ? n : 0;
 }
-function questionOnScreen() {
-  const c = store.current;
-  const mode = store.ui.mode || "practice";
-  if (!c || mode === "review") return null;
-  if (mode === "weak" ? c.kind !== "weak" : c.kind === "weak") return null;
-  return c.ids[c.index];
-}
-function visibleQuestionId() {
+/* Page/card tint follows store.ui.tintQuestionId only.
+   setMode (練習/弱点/結果) must not change that id.
+   It updates when the shown question id changes (next/start) or when that question's rating is tapped.
+   弱点/結果 lists keep the last practice question's tint. */
+function noteQuestion(id) {
+  if (!id) return;
   if (!store.ui) store.ui = { mode: "practice" };
-  const shown = questionOnScreen();
-  if (shown) {
-    if (store.ui.tintQuestionId !== shown) {
-      store.ui.tintQuestionId = shown;
-      save();
-    }
-    return shown;
-  }
-  return store.ui.tintQuestionId || null;
+  if (store.ui.tintQuestionId === id) return;
+  store.ui.tintQuestionId = id;
 }
 function applyTint() {
-  const n = ratingOf(visibleQuestionId());
+  if (!store.ui) store.ui = { mode: "practice" };
+  const n = ratingOf(store.ui.tintQuestionId);
   for (let i = 1; i <= 5; i++) {
     const on = n === i;
     document.documentElement.classList.toggle("tint-" + i, on);
