@@ -109,7 +109,7 @@ function migrate(raw) {
   const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false }, raw.ui || {});
   delete ui.mode;
   const stats = Object.assign({ streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" }, raw.stats || {});
-  reconcileToday(stats, progress);
+  recomputeToday(stats, progress, false);
   return {
     version: 3,
     progress,
@@ -132,6 +132,13 @@ function load() {
   }
 }
 let store = load();
+{
+  let rawCount = null;
+  try { rawCount = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}").stats.todayCount; }
+  catch (e) { rawCount = null; }
+  recomputeToday(store.stats, store.progress, false);
+  if (rawCount !== store.stats.todayCount) save();
+}
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
   catch (e) { console.warn("履歴の保存に失敗しました", e); }
@@ -194,19 +201,15 @@ function answeredIdsOn(progress, day) {
   });
   return ids;
 }
-function reconcileToday(stats, progress) {
-  const t = todayKey();
-  const cap = QUESTIONS.length;
-  if (stats.lastDate !== t) {
-    stats.todayIds = [];
-    stats.todayCount = 0;
-    return;
-  }
-  const fromLogs = answeredIdsOn(progress, t);
-  const fromSet = [...new Set((Array.isArray(stats.todayIds) ? stats.todayIds : []).filter(id => QMAP[id]))];
-  const ids = (fromLogs.length ? fromLogs : fromSet).slice(0, cap);
+function recomputeToday(stats, progress, persist) {
+  const ids = answeredIdsOn(progress, todayKey());
+  const count = Math.min(ids.length, QUESTIONS.length);
+  const prevIds = Array.isArray(stats.todayIds) ? stats.todayIds.join(",") : "";
+  const changed = stats.todayCount !== count || prevIds !== ids.join(",");
   stats.todayIds = ids;
-  stats.todayCount = Math.min(ids.length ? ids.length : (stats.todayCount || 0), cap);
+  stats.todayCount = count;
+  if (persist && changed) save();
+  return count;
 }
 function stampToday(id) {
   const t = todayKey();
@@ -216,18 +219,11 @@ function stampToday(id) {
     y.setDate(y.getDate() - 1);
     s.streakDays = s.lastDate === dayKey(y) ? (s.streakDays || 0) + 1 : 1;
     s.lastDate = t;
-    s.todayIds = [];
-    s.todayCount = 0;
   }
-  reconcileToday(s, store.progress);
-  if (QMAP[id] && !s.todayIds.includes(id)) s.todayIds.push(id);
-  s.todayCount = Math.min(s.todayIds.length, QUESTIONS.length);
+  if (QMAP[id]) recomputeToday(s, store.progress, false);
 }
 function shownToday() {
-  const before = store.stats.todayCount;
-  reconcileToday(store.stats, store.progress);
-  if (store.stats.todayCount !== before) save();
-  return Math.min(store.stats.todayCount || 0, QUESTIONS.length);
+  return recomputeToday(store.stats, store.progress, true);
 }
 function schedule(id, understanding) {
   const p = ensure(id);
@@ -441,6 +437,7 @@ function renderSettings() {
   </div>`;
 }
 function render() {
+  recomputeToday(store.stats, store.progress, true);
   const quiz = store.view === "quiz" && !!store.drill;
   document.documentElement.classList.toggle("quiz-on", quiz);
   document.body.classList.toggle("quiz-on", quiz);
