@@ -175,20 +175,36 @@ function counts(list) {
   });
   return { review, fresh };
 }
+function homeFiltersOn() {
+  const ui = store.ui || {};
+  return !!(ui.wrongOnly || ui.bookmarksOnly || ui.reviewOnly || ui.freshOnly);
+}
+function matchesHomeFilter(q) {
+  const ui = store.ui || {};
+  const p = prog(q.id);
+  if (ui.wrongOnly && p.lastResult === false) return true;
+  if (ui.bookmarksOnly && p.bookmarked) return true;
+  if (ui.reviewOnly && needsReview(q.id)) return true;
+  if (ui.freshOnly && isNew(q.id)) return true;
+  return false;
+}
+/* On chips are a union. All off leaves the list unfiltered. */
 function applyHomeFilters(list) {
-  return list.filter(q => {
-    if (store.ui.wrongOnly && prog(q.id).lastResult !== false) return false;
-    if (store.ui.bookmarksOnly && !prog(q.id).bookmarked) return false;
-    if (store.ui.reviewOnly && !needsReview(q.id)) return false;
-    if (store.ui.freshOnly && !isNew(q.id)) return false;
-    return true;
-  });
+  if (!homeFiltersOn()) return list.slice();
+  return list.filter(matchesHomeFilter);
 }
 function todayQueue() {
   const base = applyHomeFilters(QUESTIONS);
-  const review = base.filter(q => needsReview(q.id));
-  const fresh = base.filter(q => isNew(q.id));
-  return review.concat(fresh);
+  const review = [];
+  const fresh = [];
+  const rest = [];
+  base.forEach(q => {
+    if (needsReview(q.id)) review.push(q);
+    else if (isNew(q.id)) fresh.push(q);
+    else rest.push(q);
+  });
+  if (!homeFiltersOn()) return review.concat(fresh);
+  return review.concat(fresh, rest);
 }
 
 function localDay(iso) {
