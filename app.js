@@ -51,16 +51,17 @@ const MARK = { o: "○", x: "×" };
 
 /* ---------- storage ---------- */
 function emptyStore() {
-  return { version: 1, history: {}, sessions: [], current: null, understanding: {}, tint: null, ui: { mode: "practice" } };
+  return { version: 1, history: {}, sessions: [], current: null, understanding: {}, ui: { mode: "practice" } };
 }
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyStore();
     const d = JSON.parse(raw);
-    return Object.assign(emptyStore(), d, {
-      history: d.history || {}, sessions: d.sessions || [], understanding: d.understanding || {},
-      tint: d.tint >= 1 && d.tint <= 5 ? Number(d.tint) : null });
+    const next = Object.assign(emptyStore(), d, {
+      history: d.history || {}, sessions: d.sessions || [], understanding: d.understanding || {} });
+    delete next.tint;
+    return next;
   } catch (e) {
     console.warn("履歴の読み込みに失敗しました", e);
     return emptyStore();
@@ -124,7 +125,6 @@ function rate(n) {
   if (!(n >= 1 && n <= 5)) return;
   if (!store.understanding) store.understanding = {};
   store.understanding[qid] = n;
-  store.tint = n;
   save(); render();
 }
 function next() {
@@ -153,7 +153,7 @@ function viewQuestion() {
   const q = QMAP[c.ids[c.index]];
   const h = hist(q.id);
   const label = { all: "全問", weak: "弱点", single: "個別" }[c.kind] || "";
-  const rateN = store.tint >= 1 && store.tint <= 5 ? store.tint : 0;
+  const rateN = ratingOf(q.id);
   const rateClass = rateN ? ` rate-${rateN}` : "";
   let body = `
   <section class="card${rateClass}">
@@ -252,8 +252,19 @@ function viewReview() {
 }
 
 const TINT_PAGE = { 5: "#0c1a14", 4: "#14180c", 3: "#161416", 2: "#1a100c", 1: "#1a0c10" };
+function ratingOf(id) {
+  const n = Number(store.understanding && store.understanding[id]);
+  return n >= 1 && n <= 5 ? n : 0;
+}
+function visibleQuestionId() {
+  const c = store.current;
+  const mode = store.ui.mode || "practice";
+  if (!c || mode === "review") return null;
+  if (mode === "weak" ? c.kind !== "weak" : c.kind === "weak") return null;
+  return c.ids[c.index];
+}
 function applyTint() {
-  const n = store.tint >= 1 && store.tint <= 5 ? store.tint : 0;
+  const n = ratingOf(visibleQuestionId());
   for (let i = 1; i <= 5; i++) document.body.classList.toggle("tint-" + i, n === i);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", n ? TINT_PAGE[n] : "#14080c");
