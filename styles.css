@@ -69,10 +69,7 @@ button{cursor:pointer}
 .mark{position:relative;z-index:2;flex:0 0 44px;border:1px solid var(--line);background:transparent;color:var(--sub);font-size:1.25rem;width:44px;min-width:44px;min-height:44px;border-radius:12px;padding:0;line-height:1}
 .mark.on{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
 .screen.quiz{height:100dvh;max-height:100dvh}
-.qbody{flex:1;min-height:0;overflow:auto;padding:8px 16px;display:flex;flex-direction:column}
-.qbody:not(.revealed)::before,.qbody:not(.revealed)::after{content:"";flex:1 1 auto;min-height:12px}
-.qbody.revealed{display:block}
-.qbody.revealed::before,.qbody.revealed::after{content:none}
+.qbody{flex:1;min-height:0;overflow:auto;padding:16px 16px 8px}
 .stem{margin:0;font-size:1.05rem;line-height:1.75}
 .stem .hl{color:inherit;text-decoration:none}
 .revealed .stem .hl{color:var(--gold);text-decoration:underline;text-underline-offset:3px}
