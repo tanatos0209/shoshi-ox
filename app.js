@@ -65,7 +65,7 @@ function emptyStore() {
     version: 3,
     progress: {},
     stats: { streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" },
-    ui: { tintQuestionId: null, wrongOnly: false, bookmarksOnly: false },
+    ui: { tintQuestionId: null, wrongOnly: false, bookmarksOnly: false, reviewOnly: false, freshOnly: false },
     drill: null,
     view: "home",
     sheet: null,
@@ -106,7 +106,7 @@ function migrate(raw) {
       log,
     });
   });
-  const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false }, raw.ui || {});
+  const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false, reviewOnly: false, freshOnly: false }, raw.ui || {});
   delete ui.mode;
   const stats = Object.assign({ streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" }, raw.stats || {});
   recomputeToday(stats, progress, false);
@@ -179,6 +179,8 @@ function applyHomeFilters(list) {
   return list.filter(q => {
     if (store.ui.wrongOnly && prog(q.id).lastResult !== false) return false;
     if (store.ui.bookmarksOnly && !prog(q.id).bookmarked) return false;
+    if (store.ui.reviewOnly && !needsReview(q.id)) return false;
+    if (store.ui.freshOnly && !isNew(q.id)) return false;
     return true;
   });
 }
@@ -308,12 +310,12 @@ function renderHome() {
         ${bar(pct)}
       </div>
       <button class="cta" type="button" data-act="start-today">▶ 今日の学習を開始</button>
-      <p class="cta-sub">復習待ち ${all.review}問 ｜ 未解答 ${all.fresh}問</p>
-      <p class="cta-help">復習待ちは、間違えた問題と復習日が来た問題です。未解答は、まだ解いていない問題です。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
       <div class="grid">${cards}</div>
     </div>
     <div class="filters">
+      <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review">復習待ち (${all.review})</button>
+      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh">未解答 (${all.fresh})</button>
       <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks">🔖 記録 (${marks})</button>
       <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong">✕ 誤答のみ</button>
     </div>
@@ -439,9 +441,13 @@ function renderSettings() {
 function render() {
   recomputeToday(store.stats, store.progress, true);
   const quiz = store.view === "quiz" && !!store.drill;
+  const home = !quiz && store.view !== "settings" && store.view !== "history";
   document.documentElement.classList.toggle("quiz-on", quiz);
   document.body.classList.toggle("quiz-on", quiz);
   app.classList.toggle("quiz-on", quiz);
+  document.documentElement.classList.toggle("home-on", home);
+  document.body.classList.toggle("home-on", home);
+  app.classList.toggle("home-on", home);
   if (store.view === "settings") renderSettings();
   else if (store.view === "quiz" && store.drill) renderQuiz();
   else if (store.view === "history") renderHistory();
@@ -517,6 +523,8 @@ document.getElementById("app").addEventListener("click", e => {
   if (act === "open-subject") { store.sheet = b.dataset.id; store.toast = ""; render(); return; }
   if (act === "close-sheet") { store.sheet = null; render(); return; }
   if (act === "toggle-wrong") { store.ui.wrongOnly = !store.ui.wrongOnly; save(); render(); return; }
+  if (act === "toggle-review") { store.ui.reviewOnly = !store.ui.reviewOnly; save(); render(); return; }
+  if (act === "toggle-fresh") { store.ui.freshOnly = !store.ui.freshOnly; save(); render(); return; }
   if (act === "toggle-marks") { store.ui.bookmarksOnly = !store.ui.bookmarksOnly; save(); render(); return; }
   if (act === "start-today") { startDrill(todayQueue().map(q => q.id), "今日の学習"); return; }
   if (act === "start-subject") { startDrill(applyHomeFilters(qsIn(b.dataset.subject)).map(q => q.id), b.dataset.subject); return; }
