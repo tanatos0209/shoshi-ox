@@ -404,6 +404,10 @@ function renderSettings() {
   </div>`;
 }
 function render() {
+  const quiz = store.view === "quiz" && !!store.drill;
+  document.documentElement.classList.toggle("quiz-on", quiz);
+  document.body.classList.toggle("quiz-on", quiz);
+  app.classList.toggle("quiz-on", quiz);
   if (store.view === "settings") renderSettings();
   else if (store.view === "quiz" && store.drill) renderQuiz();
   else if (store.view === "history") renderHistory();
