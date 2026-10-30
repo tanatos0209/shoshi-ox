@@ -274,7 +274,7 @@ th{color:var(--dim);font-weight:600;font-size:.72rem;letter-spacing:.06em}
   h1{font-size:1.12rem}
   .ox button{min-height:112px;font-size:3.05rem}
   .stem{font-size:1.02rem;line-height:1.85}
-  th:nth-child(3),td:nth-child(3){display:none}
+  .col-stem{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   .ox button,.btn{transition:none}

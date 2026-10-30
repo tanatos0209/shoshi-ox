@@ -7,42 +7,42 @@ const QUESTIONS = [
   { id: "001", source: "オリジナル", topic: "民法・自然人",
     stem: "未成年者が法定代理人の同意を得ないで贈与を受けた場合において、その贈与契約が負担付のものでないときは、その未成年者は、その贈与契約を取り消すことはできない。",
     correct: "o",
-    explanation: "この肢は正しいです。負担のない贈与を受けた未成年者は、その契約を取り消せません。単に権利を得るだけの行為は、法定代理人の同意がなくてもできます。ひっかけは、負担付の贈与です。義務を負う贈与は、同意がなければ取り消せます。",
+    explanation: "この肢は正しいです。負担のない贈与を受けた未成年者は、その契約を取り消せません。単に権利を得るだけの行為は、法定代理人の同意がなくてもできます。たとえば、知人からお年玉として現金だけもらった場合です。返す義務はないので、同意がなくても取り消せません。ひっかけは、負担付の贈与です。お礼に毎週草むしりをする約束のように義務を負う贈与は、同意がなければ取り消せます。",
     article: "民法5条1項ただし書" },
   { id: "002", source: "オリジナル", topic: "民法・自然人",
     stem: "養子である未成年者が実親の同意を得て法律行為をしたときは、その未成年者の養親は、その法律行為を取り消すことはできない。",
     correct: "x",
-    explanation: "この肢は誤りです。養親は、その法律行為を取り消せます。養子が服するのは養親の親権であり、実親の同意があっても養親の取消しは防げません。ひっかけは、同意した親が親権者だと思い込む点です。",
+    explanation: "この肢は誤りです。養親は、その法律行為を取り消せます。養子が服するのは養親の親権であり、実親の同意があっても養親の取消しは防げません。たとえば、養子が実親の「いいよ」だけでスマホの分割契約をしても、養親は取り消せます。ひっかけは、同意した親が親権者だと思い込む点です。",
     article: "民法818条2項" },
   { id: "003", source: "オリジナル", topic: "民法・自然人",
     stem: "法定代理人が目的を定めないで処分を許した財産は、未成年者が自由に処分することができる。",
     correct: "o",
-    explanation: "この肢は正しいです。未成年者は、その財産を自由に処分できます。目的を定めないで処分を許した財産は、使い道の制限がありません。ひっかけは、目的を定めて許した財産です。その場合は、その目的の範囲に限られます。",
+    explanation: "この肢は正しいです。未成年者は、その財産を自由に処分できます。目的を定めないで処分を許した財産は、使い道の制限がありません。たとえば、親が「この1万円は好きに使って」と渡したお金で、文房具でもお菓子でも買える場合です。ひっかけは、目的を定めて許した財産です。「このお金は参考書だけ」と定められたお金は、その範囲に限られます。",
     article: "民法5条3項" },
   { id: "004", source: "オリジナル", topic: "民法・自然人",
     stem: "未成年者が特定の営業について法定代理人の許可を受けた場合には、その営業に関する法律行為については、行為能力の制限を理由として取り消すことができない。",
     correct: "o",
-    explanation: "この肢は正しいです。許可を受けた営業についての契約は、未成年を理由に取り消せません。その営業では、成年者と同じ行為能力があります。ひっかけは、許可の範囲です。別の営業や、営業と関係ない契約には及びません。",
+    explanation: "この肢は正しいです。許可を受けた営業についての契約は、未成年を理由に取り消せません。その営業では、成年者と同じ行為能力があります。たとえば、新聞販売の許可を受けた未成年者が、その配達用の自転車を店で買う場合です。ひっかけは、許可の範囲です。別の店を出す契約や、遊びに使うゲーム機の購入には及びません。",
     article: "民法6条1項" },
   { id: "005", source: "オリジナル", topic: "民法・総則・私権の主体",
     stem: "陶芸教室を営む成年のAは、中学3年の生徒Bに、教室で使う電動ろくろを売る契約を結んだ。Aは、Bが未成年者であること以外に取り消しの理由となる事情がない場合でも、自分のしたその売買の意思表示を取り消すことができる。",
     correct: "x",
-    explanation: "この肢は誤りです。Aは、自分の売買を取り消せません。取消しで守られるのは未成年者の側です。相手が未成年というだけでは、成年の表意者は取り消せません。ひっかけは、取消権が相手方の成年者にもあると思い込む点です。",
+    explanation: "この肢は誤りです。Aは、自分の売買を取り消せません。取消しで守られるのは未成年者の側です。相手が未成年というだけでは、成年の表意者は取り消せません。たとえば、文具店の成年の店員が中学生にノートを売ったあと、相手が未成年だというだけではその売買を取り消せない場合です。ひっかけは、取消権が相手方の成年者にもあると思い込む点です。",
     article: "民法5条1項" },
   { id: "006", source: "オリジナル", topic: "民法・総則・私権の主体",
     stem: "17歳のAは、法定代理人の同意を得ないで、楽器店主のBから中古の電子ピアノを分割払いで買った。Aが18歳になった後、Bが40日の期間を定めてその売買を追認するかどうか確答するよう催告し、Aがその期間内に確答を発しなかったときは、Aはその売買を追認したものとみなされる。",
     correct: "o",
-    explanation: "この肢は正しいです。Aは、その売買を追認したものとみなされます。成年になった本人に1か月以上の期間を定めて確答を求め、期間内に返事がなければ追認が擬制されます。40日は1か月以上です。ひっかけは、返事がないと取り消したものとみなされる、という点です。",
+    explanation: "この肢は正しいです。Aは、その売買を追認したものとみなされます。成年になった本人に1か月以上の期間を定めて確答を求め、期間内に返事がなければ追認が擬制されます。40日は1か月以上です。たとえば、未成年のときに買った中古スマホについて、成年後に店から「40日以内に追認するか返事を」と求められ、黙っていたら追認したことになる場合です。ひっかけは、返事がないと取り消したものとみなされる、という点です。",
     article: "民法20条1項" },
   { id: "007", source: "オリジナル", topic: "民法・総則・私権の主体",
     stem: "16歳の高校生Aは、スポーツ用品店で競技用ヘルメットを買うとき、店員から年齢を尋ねられず、自分からも未成年であるとは言わなかった。成年者であるとの発言や、他人の身分証明書の提示はしていない。Aは、法定代理人の同意がないこの売買を、未成年であることを理由に取り消すことができる。",
     correct: "o",
-    explanation: "この肢は正しいです。Aは、未成年であることを理由に取り消せます。年齢を黙っていただけでは、成年者だと信じさせる詐術にはなりません。ひっかけは、身分証を見せたり、自ら成年だと告げたりした場合です。そのときは詐術になり、取り消せなくなることがあります。",
+    explanation: "この肢は正しいです。Aは、未成年であることを理由に取り消せます。年齢を黙っていただけでは、成年者だと信じさせる詐術にはなりません。たとえば、コンビニでおにぎりを買うとき年齢を聞かれず、自分からも言わなかった未成年者が、その売買を取り消せる場合です。ひっかけは、身分証を見せたり、自ら成年だと告げたりした場合です。そのときは詐術になり、取り消せなくなることがあります。",
     article: "民法21条" },
   { id: "008", source: "オリジナル", topic: "民法・総則・私権の主体",
     stem: "カフェを営むAは、来店した17歳のBについて、話し方や服装から過失なく成年者だと信じ、飲食代金の契約をした。Bは、成年者だと告げることも、年齢を示す書類を見せることもしていない。この場合、Bは法定代理人の同意がないその契約を、未成年であることを理由に取り消すことができない。",
     correct: "x",
-    explanation: "この肢は誤りです。Bは、未成年であることを理由に取り消せます。相手が過失なく成年者と信じただけでは、取消しは止まりません。詐術がない限り、未成年者は取り消せます。ひっかけは、相手の善意・無過失があれば常に取り消せない、という理解です。",
+    explanation: "この肢は誤りです。Bは、未成年であることを理由に取り消せます。相手が過失なく成年者と信じただけでは、取消しは止まりません。詐術がない限り、未成年者は取り消せます。たとえば、携帯ショップの店員が服装から成年だと信じても、客が年齢を偽っていなければ、未成年の客は契約を取り消せる場合です。ひっかけは、相手の善意・無過失があれば常に取り消せない、という理解です。",
     article: "民法21条" },
 ];
 
@@ -144,7 +144,7 @@ function viewQuestion() {
   <section class="card">
     <div class="meta">
       <span class="counter">問 ${esc(q.id)}　${c.index + 1}/${c.ids.length}</span>
-      <span>出典 <b>${esc(q.source)}</b></span><span>論点 <b>${esc(q.topic)}</b></span><span>${label}</span>
+      <span>論点 <b>${esc(q.topic)}</b></span><span>${label}</span>
     </div>
     <p class="stem">${esc(q.stem)}</p>`;
   if (!c.picked) {
@@ -179,10 +179,10 @@ function viewWeak() {
   if (!ids.length) return `<section class="card"><h2>弱点</h2>
     <p>誤答の履歴がある肢はまだありません。まずは練習で解いてみてください。</p></section>`;
   const rows = ids.map(id => { const q = QMAP[id];
-    return `<tr><td>${id}</td><td>${esc(q.source)}</td><td>${esc(q.stem.slice(0, 30))}…</td><td>誤答${wrongCount(id)}／${hist(id).length}回</td></tr>`; }).join("");
+    return `<tr><td>${id}</td><td class="col-stem">${esc(q.stem.slice(0, 30))}…</td><td>誤答${wrongCount(id)}／${hist(id).length}回</td></tr>`; }).join("");
   return `<section class="card"><h2>弱点（誤答履歴のある肢）</h2>
     <p>過去に一度でも誤答した肢が ${ids.length} 問あります。</p>
-    <table><thead><tr><th>No.</th><th>出典</th><th>肢</th><th>履歴</th></tr></thead><tbody>${rows}</tbody></table>
+    <table><thead><tr><th>No.</th><th>肢</th><th>履歴</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="btn-row"><button class="btn primary block" data-act="start-weak">弱点だけ解く</button></div></section>`;
 }
 
@@ -203,23 +203,23 @@ function viewReview() {
   }
   if (s) {
     const rows = Object.keys(s.results).map(id => { const r = s.results[id], q = QMAP[id];
-      return `<tr><td>${id}</td><td>${q ? esc(q.source) : ""}</td><td>${q ? esc(q.stem.slice(0, 30)) + "…" : ""}</td>
+      return `<tr><td>${id}</td><td class="col-stem">${q ? esc(q.stem.slice(0, 30)) + "…" : ""}</td>
         <td><span class="tag ${r.correct ? "ok" : "ng"}">${r.correct ? "正解" : "誤答"}</span></td></tr>`; }).join("");
     const wrong = Object.keys(s.results).filter(id => !s.results[id].correct);
     html += `<section class="card"><h2>今回の結果</h2>
       <div class="score">${s.ok} / ${s.answered}</div>
       <p class="muted">${s.answered}問中 ${s.ok}問正解／誤答 ${s.ng}問（${fmt(s.endedAt)}）</p>
-      <table><thead><tr><th>No.</th><th>出典</th><th>肢</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>
+      <table><thead><tr><th>No.</th><th>肢</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>
       ${wrong.length ? `<p style="margin-top:12px">誤答だけもう一度：</p><div class="btn-row">${wrong.map(id => `<button class="btn" data-act="retry" data-id="${id}">問${id}をやり直す</button>`).join("")}</div>` : ""}
       <div class="btn-row"><button class="btn primary" data-act="start-all">最初からやり直す</button></div></section>`;
   }
   const qrows = QUESTIONS.map(q => { const h = hist(q.id); const ok = h.filter(x => x.correct).length;
     const last = h[h.length - 1];
     const tag = !last ? `<span class="tag na">未解答</span>` : last.correct ? `<span class="tag ok">直近正解</span>` : `<span class="tag ng">直近誤答</span>`;
-    return `<tr><td><button class="qlink" data-act="retry" data-id="${q.id}">${q.id}</button></td><td>${esc(q.source)}</td>
+    return `<tr><td><button class="qlink" data-act="retry" data-id="${q.id}">${q.id}</button></td>
       <td>${h.length ? `${ok}/${h.length}（${Math.round(ok / h.length * 100)}%）` : "—"}</td><td>${histStrip(q.id)}</td><td>${tag}</td></tr>`; }).join("");
   html += `<section class="card"><h2>肢ごとの通算成績</h2>
-    <table><thead><tr><th>No.</th><th>出典</th><th>正答率</th><th>直近10回</th><th>状態</th></tr></thead><tbody>${qrows}</tbody></table>
+    <table><thead><tr><th>No.</th><th>正答率</th><th>直近10回</th><th>状態</th></tr></thead><tbody>${qrows}</tbody></table>
     <p class="muted">番号を押すと、その肢だけ解き直せます。</p></section>`;
   const srows = store.sessions.slice(0, 20).map(x => `<tr><td>${fmt(x.endedAt)}</td><td>${{ all: "全問", weak: "弱点", single: "個別" }[x.kind] || ""}</td>
     <td>${x.ok}/${x.answered}</td><td>${x.answered ? Math.round(x.ok / x.answered * 100) : 0}%</td></tr>`).join("");
