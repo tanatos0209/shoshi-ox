@@ -345,7 +345,7 @@ function renderHome() {
     <div class="filters">
       <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review"><span class="glyph" aria-hidden="true">🔄</span>復習待ち (${all.review})</button>
       <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh"><span class="glyph" aria-hidden="true">⬜</span>未解答 (${all.fresh})</button>
-      <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks"><span class="glyph" aria-hidden="true">🔖</span>付箋 (${marks})</button>
+      <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks"><img class="fusen" src="fusen-icon.png" alt="" width="28" height="16">付箋 (${marks})</button>
       <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong"><span class="glyph" aria-hidden="true">❌</span>誤答のみ</button>
       <button class="random-btn" type="button" data-act="start-random"><img src="random-vortex.png" alt="" width="32" height="48"><span>ランダム</span></button>
     </div>
@@ -418,7 +418,7 @@ function renderQuiz() {
         <option value="review" ${d.scope === "review" ? "selected" : ""}>復習待ち</option>
         <option value="wrong" ${d.scope === "wrong" ? "selected" : ""}>誤答のみ</option>
       </select>`}
-      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "付箋を外す" : "付箋を付ける"}" aria-pressed="${p.bookmarked ? "true" : "false"}">🔖</button>
+      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "付箋を外す" : "付箋を付ける"}" aria-pressed="${p.bookmarked ? "true" : "false"}"><img class="fusen" src="fusen-icon.png" alt="" width="30" height="18"></button>
     </div>
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
