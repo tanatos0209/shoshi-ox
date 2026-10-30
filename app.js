@@ -109,15 +109,7 @@ function migrate(raw) {
   const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false }, raw.ui || {});
   delete ui.mode;
   const stats = Object.assign({ streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" }, raw.stats || {});
-  if (stats.lastDate === todayKey()) {
-    const fromLogs = answeredIdsOn(progress, stats.lastDate);
-    if (fromLogs) {
-      stats.todayIds = fromLogs;
-      stats.todayCount = fromLogs.length;
-    }
-  } else {
-    stats.todayIds = [];
-  }
+  reconcileToday(stats, progress);
   return {
     version: 3,
     progress,
@@ -190,16 +182,31 @@ function todayQueue() {
   return review.concat(fresh);
 }
 
+function localDay(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : dayKey(d);
+}
 function answeredIdsOn(progress, day) {
   const ids = [];
-  let saw = false;
   Object.entries(progress || {}).forEach(([id, p]) => {
-    if ((p.log || []).some(e => typeof e.at === "string" && e.at.slice(0, 10) === day)) {
-      saw = true;
-      ids.push(id);
-    }
+    if (!QMAP[id]) return;
+    if ((p.log || []).some(e => e && localDay(e.at) === day) && !ids.includes(id)) ids.push(id);
   });
-  return saw ? ids : null;
+  return ids;
+}
+function reconcileToday(stats, progress) {
+  const t = todayKey();
+  const cap = QUESTIONS.length;
+  if (stats.lastDate !== t) {
+    stats.todayIds = [];
+    return;
+  }
+  const fromLogs = answeredIdsOn(progress, t);
+  const fromSet = (Array.isArray(stats.todayIds) ? stats.todayIds : []).filter(id => QMAP[id]);
+  const ids = fromLogs.length ? fromLogs : [...new Set(fromSet)];
+  stats.todayIds = ids;
+  stats.todayCount = Math.min(ids.length || Math.max(0, stats.todayCount || 0), cap);
+  if (ids.length) stats.todayCount = ids.length;
 }
 function stampToday(id) {
   const t = todayKey();
@@ -212,9 +219,9 @@ function stampToday(id) {
     s.todayIds = [];
     s.todayCount = 0;
   }
-  if (!Array.isArray(s.todayIds)) s.todayIds = [];
-  if (!s.todayIds.includes(id)) s.todayIds.push(id);
-  s.todayCount = s.todayIds.length;
+  reconcileToday(s, store.progress);
+  if (QMAP[id] && !s.todayIds.includes(id)) s.todayIds.push(id);
+  s.todayCount = Math.min(s.todayIds.length, QUESTIONS.length);
 }
 function shownToday() {
   return store.stats.lastDate === todayKey() ? (store.stats.todayCount || 0) : 0;
