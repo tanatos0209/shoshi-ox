@@ -265,15 +265,19 @@ function visibleQuestionId() {
 }
 function applyTint() {
   const n = ratingOf(visibleQuestionId());
-  for (let i = 1; i <= 5; i++) document.body.classList.toggle("tint-" + i, n === i);
+  for (let i = 1; i <= 5; i++) {
+    const on = n === i;
+    document.documentElement.classList.toggle("tint-" + i, on);
+    document.body.classList.toggle("tint-" + i, on);
+  }
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", n ? TINT_PAGE[n] : "#14080c");
 }
 function render() {
   const mode = store.ui.mode || "practice";
-  applyTint();
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.mode === mode)));
   app.innerHTML = mode === "review" ? viewReview() : mode === "weak" ? viewWeak() : viewPractice();
+  applyTint();
   document.getElementById("seedinfo").textContent =
     `収録 ${QUESTIONS.length}問（民法・総則・私権の主体）・弱点 ${weakIds().length}問`;
 }
