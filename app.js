@@ -199,9 +199,22 @@ function answeredIdsOn(progress, day) {
   const ids = [];
   Object.entries(progress || {}).forEach(([id, p]) => {
     if (!QMAP[id]) return;
-    if ((p.log || []).some(e => e && localDay(e.at) === day) && !ids.includes(id)) ids.push(id);
+    // Random drills are excluded. A repeat of the same question the same day does not add another.
+    const hit = (p.log || []).some(e => e && !e.random && localDay(e.at) === day);
+    if (hit && !ids.includes(id)) ids.push(id);
   });
   return ids;
+}
+const RANDOM_CAP = 100;
+function randomAnsweredToday() {
+  const day = todayKey();
+  let n = 0;
+  Object.values(store.progress).forEach(p => {
+    (p.log || []).forEach(e => {
+      if (e && e.random && localDay(e.at) === day) n++;
+    });
+  });
+  return n;
 }
 function recomputeToday(stats, progress, persist) {
   const ids = answeredIdsOn(progress, todayKey());
@@ -314,10 +327,11 @@ function renderHome() {
       <div class="grid">${cards}</div>
     </div>
     <div class="filters">
-      <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks">🔖 記録 (${marks})</button>
-      <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong">✕ 誤答のみ</button>
-      <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review">🔄 復習待ち (${all.review})</button>
-      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh">○ 未解答 (${all.fresh})</button>
+      <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review"><span class="glyph" aria-hidden="true">🔄</span>復習待ち (${all.review})</button>
+      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh"><span class="glyph" aria-hidden="true">○</span>未解答 (${all.fresh})</button>
+      <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks"><span class="glyph" aria-hidden="true">🔖</span>記録 (${marks})</button>
+      <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong"><span class="glyph" aria-hidden="true">✕</span>誤答のみ</button>
+      <button class="random-btn" type="button" data-act="start-random"><img src="random-vortex.png" alt="" width="32" height="48"><span>ランダム</span></button>
     </div>
   </div>` + sheetHtml();
 }
@@ -383,11 +397,11 @@ function renderQuiz() {
         ${d.index < d.ids.length - 1 ? `<button type="button" data-act="quiz-next" aria-label="次の問">→</button>` : `<span class="qstep-gap" aria-hidden="true"></span>`}
       </div>
       <span class="sp"></span>
-      <select data-act="scope" aria-label="出題範囲">
+      ${d.random ? "" : `<select data-act="scope" aria-label="出題範囲">
         <option value="all" ${d.scope === "all" ? "selected" : ""}>全問</option>
         <option value="review" ${d.scope === "review" ? "selected" : ""}>復習待ち</option>
         <option value="wrong" ${d.scope === "wrong" ? "selected" : ""}>誤答のみ</option>
-      </select>
+      </select>`}
       <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "記録を外す" : "記録する"}" aria-pressed="${p.bookmarked ? "true" : "false"}">🔖</button>
     </div>
     <div class="qbody ${revealed ? "revealed" : ""}">
@@ -430,10 +444,11 @@ function renderSettings() {
     <div class="scroll">
       <label class="set-label" for="daily-goal">1日の目標問数</label>
       <input id="daily-goal" class="set-input" type="number" inputmode="numeric" min="1" max="999" step="1" value="${goal}" data-act="goal" aria-describedby="goal-note">
-      <p id="goal-note" class="cta-sub">1日の目標問数（自分で決められます）。試験の決まりではありません。</p>
-      <p class="set-preview">ホームの表示は 今日 ${shownToday()}問（目標 ${goal}問）です。</p>
+      <p id="goal-note" class="set-note">自分で決められます。<br>試験の決まりではありません。</p>
+      <p class="set-preview">ホームの表示は<br><span class="nowrap">今日 <span class="set-n">${shownToday()}</span>問（目標 <span class="set-g">${goal}</span>問）</span>です。</p>
+      <p class="set-note">その日に初めて解いた問題だけを数えます。<br>同じ問題の再解答は入りません。<br>ランダムで解いた問題も入りません。</p>
       <button class="danger" type="button" data-act="reset-data">学習データを消去</button>
-      <p class="cta-sub">解答・理解度・ブックマーク・復習予定を消します。目標問数は残します。</p>
+      <p class="set-note">解答・理解度・ブックマーク・復習予定を消します。<br>目標問数は残します。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
     </div>
   </div>`;
@@ -455,7 +470,7 @@ function render() {
   applyTint();
 }
 
-function startDrill(ids, title) {
+function startDrill(ids, title, opts) {
   const unique = [...new Set(ids)];
   if (!unique.length) {
     store.toast = "該当する問題はまだありません。";
@@ -465,7 +480,7 @@ function startDrill(ids, title) {
     return;
   }
   store.toast = "";
-  store.drill = { ids: unique, index: 0, title, scope: "all", revealed: false, startedAt: Date.now(), picked: null, correct: null, seconds: 0, seen: {} };
+  store.drill = { ids: unique, index: 0, title, scope: "all", random: !!(opts && opts.random), revealed: false, startedAt: Date.now(), picked: null, correct: null, seconds: 0, seen: {} };
   store.view = "quiz";
   store.sheet = null;
   store.historyOpen = false;
@@ -527,6 +542,7 @@ document.getElementById("app").addEventListener("click", e => {
   if (act === "toggle-fresh") { store.ui.freshOnly = !store.ui.freshOnly; save(); render(); return; }
   if (act === "toggle-marks") { store.ui.bookmarksOnly = !store.ui.bookmarksOnly; save(); render(); return; }
   if (act === "start-today") { startDrill(todayQueue().map(q => q.id), "今日の学習"); return; }
+  if (act === "start-random") { startRandom(); return; }
   if (act === "start-subject") { startDrill(applyHomeFilters(qsIn(b.dataset.subject)).map(q => q.id), b.dataset.subject); return; }
   if (act === "start-field") { startDrill(qsIn(b.dataset.subject, b.dataset.field).map(q => q.id), b.dataset.subject + "・" + b.dataset.field); return; }
   if (act === "quiz-back") { store.view = "home"; store.drill = null; save(); render(); return; }
@@ -550,8 +566,10 @@ document.getElementById("app").addEventListener("input", e => {
   const n = Math.round(Number(el.value));
   if (!(n >= 1 && n <= 999)) return;
   store.stats.dailyGoal = n;
-  const preview = document.querySelector(".set-preview");
-  if (preview) preview.textContent = `ホームの表示は 今日 ${shownToday()}問（目標 ${n}問）です。`;
+  const nEl = document.querySelector(".set-n");
+  const gEl = document.querySelector(".set-g");
+  if (nEl) nEl.textContent = String(shownToday());
+  if (gEl) gEl.textContent = String(n);
   save();
 });
 document.getElementById("app").addEventListener("change", e => {
@@ -566,6 +584,24 @@ document.getElementById("app").addEventListener("change", e => {
   save(); render();
 });
 
+function startRandom() {
+  const left = RANDOM_CAP - randomAnsweredToday();
+  if (left <= 0) {
+    store.toast = "今日のランダムは100問までです。";
+    store.view = "home";
+    store.sheet = null;
+    save(); render();
+    return;
+  }
+  const ids = QUESTIONS.map(q => q.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = ids[i];
+    ids[i] = ids[j];
+    ids[j] = t;
+  }
+  startDrill(ids.slice(0, Math.min(left, ids.length)), "ランダム", { random: true });
+}
 function currentQ() {
   const d = store.drill;
   return d && QMAP[d.ids[d.index]];
@@ -574,6 +610,13 @@ function reveal(sayYes) {
   const d = store.drill;
   const q = currentQ();
   if (!d || !q || d.revealed) return;
+  if (d.random && randomAnsweredToday() >= RANDOM_CAP) {
+    store.toast = "今日のランダムは100問までです。";
+    store.view = "home";
+    store.drill = null;
+    save(); render();
+    return;
+  }
   d.revealed = true;
   d.picked = sayYes;
   d.correct = sayYes === q.answer;
@@ -582,7 +625,9 @@ function reveal(sayYes) {
   const p = ensure(q.id);
   p.lastResult = d.correct;
   p.log = p.log || [];
-  p.log.push({ at: new Date().toISOString(), correct: d.correct, picked: sayYes ? "o" : "x", seconds: d.seconds });
+  const entry = { at: new Date().toISOString(), correct: d.correct, picked: sayYes ? "o" : "x", seconds: d.seconds };
+  if (d.random) entry.random = true;
+  p.log.push(entry);
   stampToday(q.id);
   save(); render();
 }
