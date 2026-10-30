@@ -51,21 +51,39 @@ const MARK = { o: "○", x: "×" };
 
 /* ---------- storage ---------- */
 function emptyStore() {
-  return { version: 1, history: {}, sessions: [], current: null, understanding: {}, ui: { mode: "practice" } };
+  return { version: 2, history: {}, sessions: [], current: null, understanding: {}, ui: { mode: "practice" } };
 }
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyStore();
     const d = JSON.parse(raw);
+    const understanding = (d.version || 1) < 2 ? migrateUnderstanding(d.understanding) : clampUnderstanding(d.understanding);
     const next = Object.assign(emptyStore(), d, {
-      history: d.history || {}, sessions: d.sessions || [], understanding: d.understanding || {} });
+      version: 2, history: d.history || {}, sessions: d.sessions || [], understanding });
     delete next.tint;
     return next;
   } catch (e) {
     console.warn("履歴の読み込みに失敗しました", e);
     return emptyStore();
   }
+}
+function migrateUnderstanding(map) {
+  const out = {};
+  for (const [id, raw] of Object.entries(map || {})) {
+    const n = Number(raw);
+    const mapped = n === 5 ? 3 : n === 4 || n === 3 ? 2 : n === 2 || n === 1 ? 1 : 0;
+    if (mapped) out[id] = mapped;
+  }
+  return out;
+}
+function clampUnderstanding(map) {
+  const out = {};
+  for (const [id, raw] of Object.entries(map || {})) {
+    const n = Number(raw);
+    if (n >= 1 && n <= 3) out[id] = n;
+  }
+  return out;
 }
 let store = load();
 function save() {
@@ -122,7 +140,7 @@ function rate(n) {
   if (!c || !c.picked) return;
   const qid = c.ids[c.index];
   n = Number(n);
-  if (!(n >= 1 && n <= 5)) return;
+  if (!(n >= 1 && n <= 3)) return;
   if (!store.understanding) store.understanding = {};
   store.understanding[qid] = n;
   save(); render();
@@ -175,7 +193,7 @@ function viewQuestion() {
       <div class="article">（${esc(q.article)}）</div></div>
       <div class="grasp" role="group" aria-label="理解度">
         <span class="grasp-label">理解度</span>
-        <div class="grasp-row">${[[5,"すぐ解ける"],[4,"だいたい分かる"],[3,"ふつう"],[2,"あやしい"],[1,"わからない"]].map(([n, label]) => {
+        <div class="grasp-row">${[[3,"すぐ解ける"],[2,"ふつう"],[1,"わからない"]].map(([n, label]) => {
           const on = store.understanding && store.understanding[q.id] === n;
           return `<button type="button" class="grasp-btn" data-act="rate" data-n="${n}" aria-pressed="${on ? "true" : "false"}" aria-label="${n} ${label}"><span class="grasp-n">${n}</span><span class="grasp-t">${label}</span></button>`;
         }).join("")}</div>
@@ -251,10 +269,10 @@ function viewReview() {
   return html;
 }
 
-const TINT_PAGE = { 5: "#0c1a14", 4: "#14180c", 3: "#161416", 2: "#1a100c", 1: "#1a0c10" };
+const TINT_PAGE = { 3: "#082a16", 2: "#10202c", 1: "#30080e" };
 function ratingOf(id) {
   const n = Number(store.understanding && store.understanding[id]);
-  return n >= 1 && n <= 5 ? n : 0;
+  return n >= 1 && n <= 3 ? n : 0;
 }
 function visibleQuestionId() {
   const c = store.current;
