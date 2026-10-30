@@ -344,9 +344,9 @@ function renderHome() {
     </div>
     <div class="filters">
       <button class="chip ${store.ui.reviewOnly ? "on" : ""}" type="button" data-act="toggle-review"><span class="glyph" aria-hidden="true">🔄</span>復習待ち (${all.review})</button>
-      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh"><span class="glyph" aria-hidden="true">○</span>未解答 (${all.fresh})</button>
-      <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks"><span class="glyph" aria-hidden="true">🔖</span>記録 (${marks})</button>
-      <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong"><span class="glyph" aria-hidden="true">✕</span>誤答のみ</button>
+      <button class="chip ${store.ui.freshOnly ? "on" : ""}" type="button" data-act="toggle-fresh"><span class="glyph" aria-hidden="true">⬜</span>未解答 (${all.fresh})</button>
+      <button class="chip ${store.ui.bookmarksOnly ? "on" : ""}" type="button" data-act="toggle-marks"><span class="glyph" aria-hidden="true">🔖</span>付箋 (${marks})</button>
+      <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong"><span class="glyph" aria-hidden="true">❌</span>誤答のみ</button>
       <button class="random-btn" type="button" data-act="start-random"><img src="random-vortex.png" alt="" width="32" height="48"><span>ランダム</span></button>
     </div>
   </div>` + sheetHtml();
@@ -418,7 +418,7 @@ function renderQuiz() {
         <option value="review" ${d.scope === "review" ? "selected" : ""}>復習待ち</option>
         <option value="wrong" ${d.scope === "wrong" ? "selected" : ""}>誤答のみ</option>
       </select>`}
-      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "記録を外す" : "記録する"}" aria-pressed="${p.bookmarked ? "true" : "false"}">🔖</button>
+      <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "付箋を外す" : "付箋を付ける"}" aria-pressed="${p.bookmarked ? "true" : "false"}">🔖</button>
     </div>
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
@@ -464,7 +464,7 @@ function renderSettings() {
       <p class="set-preview">ホームの表示は<br><span class="nowrap">今日 <span class="set-n">${shownToday()}</span>問（目標 <span class="set-g">${goal}</span>問）</span>です。</p>
       <p class="set-note">その日に初めて解いた問題だけを数えます。<br>同じ問題の再解答は入りません。<br>ランダムで解いた問題も入りません。</p>
       <button class="danger" type="button" data-act="reset-data">学習データを消去</button>
-      <p class="set-note">解答・理解度・ブックマーク・復習予定を消します。<br>目標問数は残します。</p>
+      <p class="set-note">解答・理解度・付箋・復習予定を消します。<br>目標問数は残します。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
     </div>
   </div>`;
@@ -536,7 +536,7 @@ document.getElementById("app").addEventListener("click", e => {
     return;
   }
   if (act === "reset-data") {
-    if (!confirm("解答・理解度・ブックマーク・復習予定を消去します。1日の目標問数は残します。よろしいですか？")) return;
+    if (!confirm("解答・理解度・付箋・復習予定を消去します。1日の目標問数は残します。よろしいですか？")) return;
     const goal = store.stats.dailyGoal || GOAL;
     store.progress = {};
     store.stats.streakDays = 0;
