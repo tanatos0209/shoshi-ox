@@ -51,7 +51,7 @@ const MARK = { o: "○", x: "×" };
 
 /* ---------- storage ---------- */
 function emptyStore() {
-  return { version: 1, history: {}, sessions: [], current: null, understanding: {}, ui: { mode: "practice" } };
+  return { version: 1, history: {}, sessions: [], current: null, understanding: {}, tint: null, ui: { mode: "practice" } };
 }
 function load() {
   try {
@@ -59,7 +59,8 @@ function load() {
     if (!raw) return emptyStore();
     const d = JSON.parse(raw);
     return Object.assign(emptyStore(), d, {
-      history: d.history || {}, sessions: d.sessions || [], understanding: d.understanding || {} });
+      history: d.history || {}, sessions: d.sessions || [], understanding: d.understanding || {},
+      tint: d.tint >= 1 && d.tint <= 5 ? Number(d.tint) : null });
   } catch (e) {
     console.warn("履歴の読み込みに失敗しました", e);
     return emptyStore();
@@ -123,6 +124,7 @@ function rate(n) {
   if (!(n >= 1 && n <= 5)) return;
   if (!store.understanding) store.understanding = {};
   store.understanding[qid] = n;
+  store.tint = n;
   save(); render();
 }
 function next() {
@@ -151,8 +153,10 @@ function viewQuestion() {
   const q = QMAP[c.ids[c.index]];
   const h = hist(q.id);
   const label = { all: "全問", weak: "弱点", single: "個別" }[c.kind] || "";
+  const rateN = store.tint >= 1 && store.tint <= 5 ? store.tint : 0;
+  const rateClass = rateN ? ` rate-${rateN}` : "";
   let body = `
-  <section class="card">
+  <section class="card${rateClass}">
     <div class="meta">
       <span class="counter">問 ${esc(q.id)}　${c.index + 1}/${c.ids.length}</span>
       <span>論点 <b>${esc(q.topic)}</b></span><span>${label}</span>
@@ -164,7 +168,7 @@ function viewQuestion() {
       <button class="x" data-act="x" aria-label="誤り（×）">×</button></div>`;
   } else {
     const r = c.results[q.id];
-    body += `<div class="result ${r.correct ? "ok" : "ng"}">
+    body += `<div class="result ${r.correct ? "ok" : "ng"}${rateClass}">
       <div class="lead">${r.correct ? "正解です" : "不正解です"}</div>
       <div>あなたの解答：${MARK[r.picked]}　正解：${MARK[q.correct]}</div>
       <div>${esc(q.explanation)}</div>
@@ -247,8 +251,16 @@ function viewReview() {
   return html;
 }
 
+const TINT_PAGE = { 5: "#0c1a14", 4: "#14180c", 3: "#161416", 2: "#1a100c", 1: "#1a0c10" };
+function applyTint() {
+  const n = store.tint >= 1 && store.tint <= 5 ? store.tint : 0;
+  for (let i = 1; i <= 5; i++) document.body.classList.toggle("tint-" + i, n === i);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", n ? TINT_PAGE[n] : "#14080c");
+}
 function render() {
   const mode = store.ui.mode || "practice";
+  applyTint();
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.mode === mode)));
   app.innerHTML = mode === "review" ? viewReview() : mode === "weak" ? viewWeak() : viewPractice();
   document.getElementById("seedinfo").textContent =
