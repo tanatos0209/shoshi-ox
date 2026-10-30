@@ -342,7 +342,11 @@ function renderQuiz() {
       <button type="button" data-act="quiz-history">📊 履歴</button>
     </header>
     <div class="qmeta">
-      <span>問 ${esc(q.id)}　${d.index + 1}/${d.ids.length}</span>
+      <div class="qstep">
+        ${d.index > 0 ? `<button type="button" data-act="quiz-prev" aria-label="前の問">←</button>` : `<span class="qstep-gap" aria-hidden="true"></span>`}
+        <span>問 ${esc(q.id)}　${d.index + 1}/${d.ids.length}</span>
+        ${d.index < d.ids.length - 1 ? `<button type="button" data-act="quiz-next" aria-label="次の問">→</button>` : `<span class="qstep-gap" aria-hidden="true"></span>`}
+      </div>
       <span class="sp"></span>
       <select data-act="scope" aria-label="出題範囲">
         <option value="all" ${d.scope === "all" ? "selected" : ""}>全問</option>
@@ -417,7 +421,7 @@ function startDrill(ids, title) {
     return;
   }
   store.toast = "";
-  store.drill = { ids: unique, index: 0, title, scope: "all", revealed: false, startedAt: Date.now(), picked: null, correct: null, seconds: 0 };
+  store.drill = { ids: unique, index: 0, title, scope: "all", revealed: false, startedAt: Date.now(), picked: null, correct: null, seconds: 0, seen: {} };
   store.view = "quiz";
   store.sheet = null;
   store.historyOpen = false;
@@ -488,6 +492,8 @@ document.getElementById("app").addEventListener("click", e => {
     p.bookmarked = !p.bookmarked;
     save(); render(); return;
   }
+  if (act === "quiz-prev") { moveDrill(-1); return; }
+  if (act === "quiz-next") { moveDrill(1); return; }
   if (act === "pick") { reveal(b.dataset.val === "1"); return; }
   if (act === "rate") { commitRate(Number(b.dataset.n)); return; }
 });
@@ -533,6 +539,41 @@ function reveal(sayYes) {
   stampToday();
   save(); render();
 }
+function snapshotDrill() {
+  const d = store.drill;
+  const q = currentQ();
+  if (!d || !q) return;
+  if (!d.seen) d.seen = {};
+  d.seen[q.id] = { revealed: !!d.revealed, picked: d.picked, correct: d.correct, seconds: d.seconds || 0, startedAt: d.startedAt || null };
+}
+function restoreDrill(id) {
+  const d = store.drill;
+  const saved = d.seen && d.seen[id];
+  if (saved) {
+    d.revealed = saved.revealed;
+    d.picked = saved.picked;
+    d.correct = saved.correct;
+    d.seconds = saved.seconds;
+    d.startedAt = saved.startedAt;
+  } else {
+    d.revealed = false;
+    d.picked = null;
+    d.correct = null;
+    d.seconds = 0;
+    d.startedAt = Date.now();
+  }
+}
+function moveDrill(delta) {
+  const d = store.drill;
+  if (!d) return;
+  const next = d.index + delta;
+  if (next < 0 || next >= d.ids.length) return;
+  snapshotDrill();
+  d.index = next;
+  restoreDrill(d.ids[next]);
+  noteQuestion(d.ids[next]);
+  save(); render();
+}
 function commitRate(n) {
   const d = store.drill;
   const q = currentQ();
@@ -542,6 +583,7 @@ function commitRate(n) {
   if (p.lastResult == null) p.lastResult = d.correct;
   schedule(q.id, n);
   noteQuestion(q.id);
+  snapshotDrill();
   const next = d.index + 1;
   if (next >= d.ids.length) {
     store.view = "home";
@@ -550,12 +592,8 @@ function commitRate(n) {
     return;
   }
   d.index = next;
-  d.revealed = false;
-  d.picked = null;
-  d.correct = null;
-  d.seconds = 0;
-  d.startedAt = Date.now();
-  noteQuestion(d.ids[d.index]);
+  restoreDrill(d.ids[next]);
+  noteQuestion(d.ids[next]);
   save(); render();
 }
 function noteQuestion(id) {

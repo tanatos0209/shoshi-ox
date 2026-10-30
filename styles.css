@@ -61,6 +61,9 @@ button{cursor:pointer}
 .qnav h2{margin:0;flex:1;text-align:center;font-size:.92rem;font-weight:700}
 .qnav button{border:0;background:transparent;color:var(--text);min-height:40px;padding:0 6px;font-weight:700}
 .qmeta{display:flex;align-items:center;gap:8px;padding:10px 16px 0;color:var(--sub);font-size:.85rem}
+.qstep{display:flex;align-items:center;gap:2px}
+.qstep button{min-width:44px;min-height:44px;border:0;background:transparent;color:var(--gold);font-size:1.25rem;font-weight:700;padding:0}
+.qstep-gap{width:44px;flex:0 0 44px}
 .qmeta .sp{flex:1;min-width:0}
 .qmeta select{background:transparent;color:var(--text);border:0;font-weight:700;flex:0 1 auto;max-width:5.5rem;min-width:0;position:relative;z-index:1}
 .mark{position:relative;z-index:2;flex:0 0 44px;border:1px solid var(--line);background:transparent;color:var(--sub);font-size:1.25rem;width:44px;min-width:44px;min-height:44px;border-radius:12px;padding:0;line-height:1}
@@ -93,7 +96,7 @@ button{cursor:pointer}
 .rates .g{background:#2E6F4E}
 .rates .b{background:#1a3344}
 .rates .r{background:#6a2a30}
-.hint{margin:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));text-align:center;color:var(--sub);font-size:.72rem}
+.hint{flex-shrink:0;margin:0;padding:0 16px calc(12px + env(safe-area-inset-bottom));text-align:center;color:var(--sub);font-size:.72rem}
 .toast{margin:8px 16px;color:var(--gold);font-size:.85rem;text-align:center}
 .set-label{display:block;margin:16px 0 8px;font-weight:700}
 .set-input{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#12261c;color:var(--text);font-size:1.25rem;font-weight:700;padding:8px 12px}
