@@ -274,12 +274,24 @@ function ratingOf(id) {
   const n = Number(store.understanding && store.understanding[id]);
   return n >= 1 && n <= 3 ? n : 0;
 }
-function visibleQuestionId() {
+function questionOnScreen() {
   const c = store.current;
   const mode = store.ui.mode || "practice";
   if (!c || mode === "review") return null;
   if (mode === "weak" ? c.kind !== "weak" : c.kind === "weak") return null;
   return c.ids[c.index];
+}
+function visibleQuestionId() {
+  if (!store.ui) store.ui = { mode: "practice" };
+  const shown = questionOnScreen();
+  if (shown) {
+    if (store.ui.tintQuestionId !== shown) {
+      store.ui.tintQuestionId = shown;
+      save();
+    }
+    return shown;
+  }
+  return store.ui.tintQuestionId || null;
 }
 function applyTint() {
   const n = ratingOf(visibleQuestionId());
