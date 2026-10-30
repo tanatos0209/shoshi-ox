@@ -51,14 +51,15 @@ const MARK = { o: "○", x: "×" };
 
 /* ---------- storage ---------- */
 function emptyStore() {
-  return { version: 1, history: {}, sessions: [], current: null, ui: { mode: "practice" } };
+  return { version: 1, history: {}, sessions: [], current: null, understanding: {}, ui: { mode: "practice" } };
 }
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyStore();
     const d = JSON.parse(raw);
-    return Object.assign(emptyStore(), d, { history: d.history || {}, sessions: d.sessions || [] });
+    return Object.assign(emptyStore(), d, {
+      history: d.history || {}, sessions: d.sessions || [], understanding: d.understanding || {} });
   } catch (e) {
     console.warn("履歴の読み込みに失敗しました", e);
     return emptyStore();
@@ -114,6 +115,16 @@ function choose(ans) {
   (store.history[q.id] = store.history[q.id] || []).push({ at, correct, picked: ans });
   save(); render();
 }
+function rate(n) {
+  const c = store.current;
+  if (!c || !c.picked) return;
+  const qid = c.ids[c.index];
+  n = Number(n);
+  if (!(n >= 1 && n <= 5)) return;
+  if (!store.understanding) store.understanding = {};
+  store.understanding[qid] = n;
+  save(); render();
+}
 function next() {
   const c = store.current;
   if (!c) return;
@@ -158,6 +169,13 @@ function viewQuestion() {
       <div>あなたの解答：${MARK[r.picked]}　正解：${MARK[q.correct]}</div>
       <div>${esc(q.explanation)}</div>
       <div class="article">（${esc(q.article)}）</div></div>
+      <div class="grasp" role="group" aria-label="理解度">
+        <span class="grasp-label">理解度</span>
+        <div class="grasp-row">${[5,4,3,2,1].map(n => {
+          const on = store.understanding && store.understanding[q.id] === n;
+          return `<button type="button" class="grasp-btn" data-act="rate" data-n="${n}" aria-pressed="${on ? "true" : "false"}" aria-label="理解度${n}">${n}</button>`;
+        }).join("")}</div>
+      </div>
       <button class="btn primary block" data-act="next">${c.index >= c.ids.length - 1 ? "結果を見る" : "次の問へ"}</button>`;
   }
   body += `<p class="muted" style="margin-top:12px">この肢の通算：${h.length}回解答／誤答${wrongCount(q.id)}回</p>
@@ -245,6 +263,7 @@ app.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
   if (act === "o" || act === "x") choose(act);
+  else if (act === "rate") rate(b.dataset.n);
   else if (act === "next") next();
   else if (act === "start-all") begin("all", QUESTIONS.map(q => q.id));
   else if (act === "start-weak") begin("weak", weakIds());
