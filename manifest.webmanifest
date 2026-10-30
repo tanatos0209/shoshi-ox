@@ -1,7 +1,7 @@
 {
-  "name": "司法書士 択一○×",
-  "short_name": "択一○×",
-  "description": "司法書士試験 択一の○×練習（学習履歴は端末に保存）",
+  "name": "AI択一対策",
+  "short_name": "AI択一対策",
+  "description": "司法書士試験のAI択一対策（○×練習。学習履歴は端末に保存）",
   "lang": "ja",
   "start_url": "./index.html",
   "scope": "./",
