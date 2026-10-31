@@ -432,8 +432,17 @@ function renderQuiz() {
 function slashDay(iso) {
   const d = new Date(iso);
   if (!iso || Number.isNaN(d.getTime())) return "";
-  const p = n => String(n).padStart(2, "0");
-  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(d);
+  const get = type => parts.find(p => p.type === type).value;
+  return `${get("year")}/${get("month")}/${get("day")} ${get("hour")}:${get("minute")}`;
 }
 function historyAttempts() {
   const rows = [];
