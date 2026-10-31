@@ -81,7 +81,7 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .subj b{font-size:.98rem}
 .subj .meta-line{margin-top:auto;color:var(--gold);font-size:.75rem;font-weight:700}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px calc(8px + env(safe-area-inset-bottom));flex-shrink:0}
-.chip,.random-btn{background:var(--card)}
+.chip,.chip.on,.random-btn{background:#1A1C1F}
 .chip{min-height:44px;border-radius:14px;border:1px solid var(--line);color:var(--text);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px}
 .chip .glyph{font-size:.95rem;line-height:1}
 .chip .fusen{width:28px;height:16px;object-fit:contain;display:block;flex:0 0 auto}
