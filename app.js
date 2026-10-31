@@ -162,7 +162,8 @@ function needsReview(id) {
   const p = store.progress[id];
   if (!p || p.lastResult == null) return false;
   if (p.lastResult === false) return true;
-  return !!(p.nextReviewDate && p.nextReviewDate.slice(0, 10) <= todayKey());
+  const day = p.nextReviewDate ? localDay(p.nextReviewDate) : "";
+  return !!(day && day <= todayKey());
 }
 function masterRate(list) {
   if (!list.length) return 0;
@@ -205,8 +206,16 @@ function todayQueue() {
     else if (isNew(q.id)) fresh.push(q);
     else rest.push(q);
   });
+  review.sort((a, b) => reviewSortKey(a.id) < reviewSortKey(b.id) ? -1 : reviewSortKey(a.id) > reviewSortKey(b.id) ? 1 : 0);
   if (!homeFiltersOn()) return review.concat(fresh);
   return review.concat(fresh, rest);
+}
+function reviewSortKey(id) {
+  const p = prog(id);
+  const wrong = p.lastResult === false ? "0" : "1";
+  let day = p.nextReviewDate ? localDay(p.nextReviewDate) : "";
+  if (!day || (p.lastResult === false && day > todayKey())) day = todayKey();
+  return wrong + ":" + day + ":" + id;
 }
 
 function localDay(iso) {
@@ -258,23 +267,69 @@ function stampToday(id) {
 function shownToday() {
   return recomputeToday(store.stats, store.progress, true);
 }
+function nextSchedule(prev, understanding, correct) {
+  let ease = prev && prev.ease ? prev.ease : 2.5;
+  let reps = prev && prev.reps ? prev.reps : 0;
+  let interval = prev && prev.interval ? prev.interval : 1;
+  if (understanding === 1) {
+    reps = 0;
+    interval = 1;
+    ease = Math.max(1.3, ease - 0.2);
+  } else {
+    reps += 1;
+    if (reps === 1) interval = 1;
+    else if (reps === 2) interval = understanding === 3 ? 6 : 3;
+    else interval = Math.max(1, Math.round(interval * ease));
+    if (understanding === 3) ease = Math.min(3, ease + 0.1);
+  }
+  if (correct === false) interval = 1;
+  interval = Math.max(1, Math.min(90, interval));
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + interval);
+  return { reps, interval, ease, nextReviewDate: d.toISOString() };
+}
 function schedule(id, understanding) {
   const p = ensure(id);
-  if (!p.ease) p.ease = 2.5;
-  if (understanding === 1) {
-    p.reps = 0;
-    p.interval = 1;
-    p.ease = Math.max(1.3, (p.ease || 2.5) - 0.2);
-  } else {
-    p.reps = (p.reps || 0) + 1;
-    if (p.reps === 1) p.interval = 1;
-    else if (p.reps === 2) p.interval = understanding === 3 ? 6 : 3;
-    else p.interval = Math.max(1, Math.round((p.interval || 1) * p.ease));
-    if (understanding === 3) p.ease = Math.min(3, p.ease + 0.1);
-  }
-  const d = new Date();
-  d.setDate(d.getDate() + p.interval);
-  p.nextReviewDate = d.toISOString();
+  const next = nextSchedule(p, understanding, p.lastResult !== false);
+  p.reps = next.reps;
+  p.interval = next.interval;
+  p.ease = next.ease;
+  p.nextReviewDate = next.nextReviewDate;
+}
+function intervalPhrase(days) {
+  return days <= 1 ? "明日" : "次は" + days + "日後";
+}
+function dayPhrase(day) {
+  if (!day) return "";
+  const today = todayKey();
+  if (day <= today) return "今日";
+  const tom = new Date();
+  tom.setDate(tom.getDate() + 1);
+  if (day === dayKey(tom)) return "明日";
+  const due = new Date(day + "T12:00:00");
+  const now = new Date(today + "T12:00:00");
+  const diff = Math.round((due - now) / 86400000);
+  return diff <= 1 ? "明日" : diff + "日後";
+}
+function reviewWhenLabel(id) {
+  const p = prog(id);
+  if (!p || p.lastResult == null) return "なし";
+  if (p.lastResult === false) return "今日";
+  return dayPhrase(p.nextReviewDate ? localDay(p.nextReviewDate) : "") || "なし";
+}
+function soonestReviewPhrase(list) {
+  let best = "";
+  let any = false;
+  list.forEach(q => {
+    const p = prog(q.id);
+    if (!p || p.lastResult == null) return;
+    any = true;
+    let day = p.nextReviewDate ? localDay(p.nextReviewDate) : todayKey();
+    if (p.lastResult === false || !day) day = todayKey();
+    if (!best || day < best) best = day;
+  });
+  return any ? dayPhrase(best) : "";
 }
 
 /* Tint id changes only when the question id changes or that question is rated. */
@@ -362,17 +417,18 @@ function sheetHtml() {
   const rows = s.fields.map(f => {
     const fl = qsIn(s.name, f);
     const rate = masterRate(fl);
+    const soon = soonestReviewPhrase(fl);
     return `<button class="field" type="button" data-act="start-field" data-subject="${esc(s.name)}" data-field="${esc(f)}" ${fl.length ? "" : "disabled"}>
       <span class="row"><span>${esc(f)}</span><small>${fl.length}問</small></span>
       ${bar(rate)}
-      <small>マスター率: ${rate}%</small>
+      <small>マスター率: ${rate}%${soon ? `　次回復習: ${soon}` : ""}</small>
     </button>`;
   }).join("");
   return `<div class="backdrop" data-act="close-sheet"></div>
     <div class="sheet" role="dialog" aria-label="${esc(s.name)}">
       <div class="sheet-h"><h2>${esc(s.name)}（全${s.fields.length}分野）</h2><button type="button" data-act="close-sheet" aria-label="閉じる">✕</button></div>
       <button class="cta" type="button" data-act="start-subject" data-subject="${esc(s.name)}" ${list.length ? "" : "disabled"}>▶ ${esc(s.name)}をまとめて開始</button>
-      <p class="cta-sub">復習待ち: ${c.review}問 / 未解答: ${c.fresh}問</p>
+      <p class="cta-sub">復習待ち: ${c.review}問${c.review ? `（いちばん近いのは${soonestReviewPhrase(list) || "今日"}）` : ""} / 未解答: ${c.fresh}問</p>
       ${rows}
     </div>`;
 }
@@ -392,12 +448,13 @@ function renderQuiz() {
       <p>${q.explanationHtml}</p>
       <div class="trap"><div class="pill">▲ ひっかけ注意</div><p>${q.trapHtml}</p></div>
     </div>` : "";
+  const dueLine = n => intervalPhrase(nextSchedule(p, n, d.correct).interval);
   const actions = revealed ? `<div class="rates">
-      <button type="button" class="g" data-act="rate" data-n="3"><span class="n">3</span><span class="t">すぐ解ける</span></button>
-      <button type="button" class="b" data-act="rate" data-n="2"><span class="n">2</span><span class="t">ふつう</span></button>
-      <button type="button" class="r" data-act="rate" data-n="1"><span class="n">1</span><span class="t">わからない</span></button>
+      <button type="button" class="g" data-act="rate" data-n="3"><span class="n">3</span><span class="t">すぐ解ける</span><span class="due">${dueLine(3)}</span></button>
+      <button type="button" class="b" data-act="rate" data-n="2"><span class="n">2</span><span class="t">ふつう</span><span class="due">${dueLine(2)}</span></button>
+      <button type="button" class="r" data-act="rate" data-n="1"><span class="n">1</span><span class="t">わからない</span><span class="due">${dueLine(1)}</span></button>
     </div>
-    <p class="hint">タップすると記録して、次の問題へ進みます。復習の間隔は自動で決まります。</p>`
+    <p class="hint">タップすると記録して、次の問題へ進みます。</p>`
     : `<div class="ox">
       <button type="button" class="o" data-act="pick" data-val="1" aria-label="正しい">○</button>
       <button type="button" class="x" data-act="pick" data-val="0" aria-label="誤り">✕</button>
@@ -424,6 +481,7 @@ function renderQuiz() {
       <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "付箋を外す" : "付箋を付ける"}" aria-pressed="${p.bookmarked ? "true" : "false"}"><img class="fusen" src="fusen-icon.png" alt="" width="30" height="18"></button>
     </div>
     ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
+    ${revealed ? "" : `<p class="next-rev">次回復習：${esc(reviewWhenLabel(q.id))}</p>`}
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
       ${body}
