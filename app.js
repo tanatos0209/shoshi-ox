@@ -503,6 +503,10 @@ function renderHome() {
       <div class="summary">
         <p class="streak">連続 ${store.stats.streakDays || 0} 日</p>
         <p class="goal">今日 ${shownToday()}問 <span>（目標 ${goal}問）</span></p>
+        <form class="search-row" role="search">
+          <input class="search-input" type="search" name="q" value="${esc(homeSearch.q)}" placeholder="キーワード" aria-label="キーワード" enterkeyhint="search" autocomplete="off">
+          <button class="search-go" type="submit">🔍 検索</button>
+        </form>
         ${bar(pct)}
       </div>
       <button class="cta" type="button" data-act="start-today">▶ 今日の学習を開始</button>
@@ -516,7 +520,45 @@ function renderHome() {
       <button class="chip ${store.ui.wrongOnly ? "on" : ""}" type="button" data-act="toggle-wrong"><span class="glyph" aria-hidden="true">❌</span>誤答のみ</button>
       <button class="random-btn" type="button" data-act="start-random"><img src="random-vortex.png" alt="" width="32" height="48"><span>ランダム</span></button>
     </div>
-  </div>` + sheetHtml();
+  </div>` + sheetHtml() + searchSheetHtml();
+}
+function stripHtml(s) {
+  return String(s || "").replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+}
+function searchHits(raw) {
+  const q = String(raw || "").trim().toLowerCase();
+  if (!q) return [];
+  return QUESTIONS.filter(item => {
+    const blob = [item.id, "問" + item.id, item.subject, item.category, stripHtml(item.questionHtml), stripHtml(item.explanationHtml), stripHtml(item.trapHtml)].join("\n").toLowerCase();
+    return blob.includes(q);
+  });
+}
+function searchSnippet(html) {
+  const t = stripHtml(html);
+  return t.length > 42 ? t.slice(0, 42) + "…" : t;
+}
+let homeSearch = { q: "", open: false };
+function runHomeSearch(raw) {
+  homeSearch.q = String(raw || "");
+  homeSearch.open = true;
+  store.sheet = null;
+  store.toast = "";
+  render();
+}
+function searchSheetHtml() {
+  if (!homeSearch.open) return "";
+  const hits = searchHits(homeSearch.q);
+  const label = homeSearch.q.trim() || "検索";
+  const rows = hits.length ? hits.map(item => `<button class="search-hit" type="button" data-act="start-one" data-id="${esc(item.id)}">
+      <b>問${esc(item.id)}・${esc(item.subject)}・${esc(item.category)}</b>
+      <span>${esc(searchSnippet(item.questionHtml))}</span>
+      <small>タップでこの問題を開く</small>
+    </button>`).join("") : `<p class="cta-sub">該当する問題はありません</p>`;
+  return `<div class="backdrop" data-act="close-search"></div>
+    <div class="sheet search-sheet" role="dialog" aria-label="検索結果">
+      <div class="sheet-h"><h2>「${esc(label)}」 ${hits.length}件</h2><button type="button" data-act="close-search" aria-label="閉じる">✕</button></div>
+      ${rows}
+    </div>`;
 }
 function sheetHtml() {
   if (!store.sheet) return "";
@@ -757,6 +799,13 @@ function applyScope(scope) {
   save(); render();
 }
 
+document.getElementById("app").addEventListener("submit", e => {
+  const form = e.target && e.target.closest ? e.target.closest(".search-row") : null;
+  if (!form) return;
+  e.preventDefault();
+  const input = form.querySelector("input");
+  runHomeSearch(input ? input.value : "");
+});
 document.getElementById("app").addEventListener("click", e => {
   const origin = e.target && e.target.closest ? e.target : (e.target && e.target.parentElement);
   const b = origin && origin.closest ? origin.closest("[data-act]") : null;
@@ -798,6 +847,8 @@ document.getElementById("app").addEventListener("click", e => {
   if (act === "toggle-review") { store.ui.reviewOnly = !store.ui.reviewOnly; save(); render(); return; }
   if (act === "toggle-fresh") { store.ui.freshOnly = !store.ui.freshOnly; save(); render(); return; }
   if (act === "toggle-marks") { store.ui.bookmarksOnly = !store.ui.bookmarksOnly; save(); render(); return; }
+  if (act === "close-search") { homeSearch.open = false; render(); return; }
+  if (act === "start-one") { homeSearch.open = false; startDrill([b.dataset.id], "問" + b.dataset.id); return; }
   if (act === "start-today") { startDrill(todayQueue().map(q => q.id), "今日の学習"); return; }
   if (act === "start-random") { startRandom(); return; }
   if (act === "start-subject") { startDrill(applyHomeFilters(qsIn(b.dataset.subject)).map(q => q.id), b.dataset.subject); return; }
