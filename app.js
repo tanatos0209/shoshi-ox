@@ -417,9 +417,11 @@ function renderQuiz() {
         <option value="all" ${d.scope === "all" ? "selected" : ""}>全問</option>
         <option value="review" ${d.scope === "review" ? "selected" : ""}>復習待ち</option>
         <option value="wrong" ${d.scope === "wrong" ? "selected" : ""}>誤答のみ</option>
+        <option value="mark" ${d.scope === "mark" ? "selected" : ""}>付箋</option>
       </select>`}
       <button type="button" class="mark ${p.bookmarked ? "on" : ""}" data-act="bookmark" aria-label="${p.bookmarked ? "付箋を外す" : "付箋を付ける"}" aria-pressed="${p.bookmarked ? "true" : "false"}"><img class="fusen" src="fusen-icon.png" alt="" width="30" height="18"></button>
     </div>
+    ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
       ${body}
@@ -444,44 +446,50 @@ function slashDay(iso) {
   const get = type => parts.find(p => p.type === type).value;
   return `${get("year")}/${get("month")}/${get("day")} ${get("hour")}:${get("minute")}`;
 }
-function historyAttempts() {
-  const rows = [];
+function historyGroups() {
+  const groups = [];
   QUESTIONS.forEach(q => {
     const p = store.progress[q.id];
     if (!p) return;
     const logs = (p.log || []).filter(e => e && (e.at || e.correct != null));
+    const attempts = [];
     if (!logs.length) {
       if (p.lastResult == null) return;
-      rows.push({ at: "", correct: !!p.lastResult, understanding: p.understanding || 0 });
-      return;
+      attempts.push({ at: "", correct: !!p.lastResult, understanding: p.understanding || 0 });
+    } else {
+      logs.sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
+      logs.forEach((e, i) => {
+        const latest = i === logs.length - 1;
+        const u = e.understanding || (latest ? p.understanding : 0) || 0;
+        attempts.push({ at: e.at || "", correct: !!e.correct, understanding: u });
+      });
     }
-    logs.forEach((e, i) => {
-      const latest = i === logs.length - 1;
-      const u = e.understanding || (latest ? p.understanding : 0) || 0;
-      rows.push({ at: e.at || "", correct: !!e.correct, understanding: u });
-    });
+    groups.push({ first: attempts[0].at || "", attempts });
   });
-  rows.sort((a, b) => String(a.at).localeCompare(String(b.at)));
-  return rows;
+  groups.sort((a, b) => String(a.first).localeCompare(String(b.first)));
+  return groups;
 }
 function renderHistory() {
-  const rows = historyAttempts().map(row => {
-    const mark = row.correct ? "○" : "×";
-    const tone = row.correct ? "ok" : "ng";
-    const u = row.understanding ? `理解度${row.understanding}` : "理解度—";
-    const day = slashDay(row.at);
-    const when = day ? `<span class="when">演習日 ${esc(day)}</span>` : "";
-    return `<div class="hist-item"><b><span class="${tone}">${mark}</span> ${u}</b>${when}</div>`;
+  const cards = historyGroups().map(group => {
+    const items = group.attempts.map(row => {
+      const mark = row.correct ? "○" : "×";
+      const tone = row.correct ? "ok" : "ng";
+      const u = row.understanding ? `理解度${row.understanding}` : "理解度—";
+      const day = slashDay(row.at);
+      const when = day ? `<span class="when">演習日 ${esc(day)}</span>` : "";
+      return `<div class="hist-item"><b><span class="${tone}">${mark}</span> ${u}</b>${when}</div>`;
+    }).join("");
+    return `<section class="hist-card">${items}</section>`;
   }).join("") || `<p class="cta-sub">まだ記録はありません。</p>`;
   app.innerHTML = `<div class="screen">
     <header class="qnav">
       <button type="button" data-act="history-back">← 戻る</button>
-      <h2>履歴・結果</h2>
+      <h2>履歴</h2>
       <span></span>
     </header>
     <div class="scroll">
-      <p class="streak">連続 ${store.stats.streakDays || 0} 日　今日 ${shownToday()}問（目標 ${store.stats.dailyGoal || GOAL}問）</p>
-      ${rows}
+      <p class="streak hist-summary">連続 ${store.stats.streakDays || 0} 日　今日 ${shownToday()}問（目標 ${store.stats.dailyGoal || GOAL}問）</p>
+      ${cards}
     </div>
   </div>`;
 }
@@ -533,7 +541,7 @@ function startDrill(ids, title, opts) {
     return;
   }
   store.toast = "";
-  store.drill = { ids: unique, index: 0, title, scope: "all", random: !!(opts && opts.random), revealed: false, startedAt: Date.now(), picked: null, correct: null, seconds: 0, seen: {} };
+  store.drill = { ids: unique.slice(), baseIds: unique.slice(), index: 0, title, scope: "all", random: !!(opts && opts.random), revealed: false, startedAt: Date.now(), picked: null, correct: null, seconds: 0, seen: {} };
   store.view = "quiz";
   store.sheet = null;
   store.historyOpen = false;
@@ -549,8 +557,33 @@ function filteredIds(sourceIds, scope) {
   return sourceIds.filter(id => {
     if (scope === "review") return needsReview(id);
     if (scope === "wrong") return prog(id).lastResult === false;
+    if (scope === "mark") return !!prog(id).bookmarked;
     return true;
   });
+}
+function applyScope(scope) {
+  const d = store.drill;
+  if (!d) return;
+  if (!Array.isArray(d.baseIds) || !d.baseIds.length) d.baseIds = d.ids.slice();
+  const cur = d.ids[d.index];
+  const nextIds = filteredIds(d.baseIds, scope);
+  if (!nextIds.length) {
+    store.toast = "該当する問題はまだありません。";
+    save(); render();
+    return;
+  }
+  store.toast = "";
+  d.scope = scope;
+  const keep = nextIds.indexOf(cur);
+  d.ids = nextIds;
+  if (keep >= 0) d.index = keep;
+  else {
+    snapshotDrill();
+    d.index = 0;
+    restoreDrill(d.ids[0]);
+    noteQuestion(d.ids[0]);
+  }
+  save(); render();
 }
 
 document.getElementById("app").addEventListener("click", e => {
@@ -628,13 +661,7 @@ document.getElementById("app").addEventListener("input", e => {
 document.getElementById("app").addEventListener("change", e => {
   const s = e.target.closest("[data-act='scope']");
   if (!s || !store.drill) return;
-  const scope = s.value;
-  const cur = store.drill.ids[store.drill.index];
-  const nextIds = filteredIds(store.drill.ids, scope);
-  const ids = nextIds.includes(cur) ? [cur].concat(nextIds.filter(id => id !== cur)) : store.drill.ids;
-  store.drill.scope = scope;
-  if (nextIds.includes(cur)) store.drill.ids = ids;
-  save(); render();
+  applyScope(s.value);
 });
 
 function startRandom() {
