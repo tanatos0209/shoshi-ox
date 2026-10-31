@@ -494,7 +494,8 @@ function applyTint() {
     document.body.classList.toggle("tint-" + i, on);
   }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", quiz ? (n ? TINT_PAGE[n] : "#0D231A") : "#5B8FB8");
+  const home = !quiz && store.view !== "settings" && store.view !== "history";
+  if (meta) meta.setAttribute("content", quiz ? (n ? TINT_PAGE[n] : "#0D231A") : (home ? "#1A1C1F" : "#0D231A"));
 }
 
 function esc(s) {
