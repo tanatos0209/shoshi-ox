@@ -2,6 +2,8 @@
 
 依存なしの静的Webアプリです（`index.html` + `app.js` + `styles.css`）。
 
+仕様の正本は [SPEC.md](SPEC.md) です。
+
 ## 起動方法
 
 ```bash
