@@ -319,7 +319,7 @@ function onlyUnknown() {
 function isRatedUnknown(q) {
   return Number(prog(q.id).understanding) === 1;
 }
-/* On chips are a union. All off leaves the list unfiltered. わからない is an extra AND. */
+/* On chips are a union. All off leaves the list unfiltered. 苦手 is an extra AND. */
 function applyHomeFilters(list) {
   const base = homeFiltersOn() ? list.filter(matchesHomeFilter) : list.slice();
   return onlyUnknown() ? base.filter(isRatedUnknown) : base;
@@ -337,6 +337,20 @@ function todayQueue() {
   review.sort((a, b) => reviewSortKey(a.id) < reviewSortKey(b.id) ? -1 : reviewSortKey(a.id) > reviewSortKey(b.id) ? 1 : 0);
   if (!homeFiltersOn()) return onlyUnknown() ? review.concat(rest) : review.concat(fresh);
   return review.concat(fresh, rest);
+}
+function streakTone(days) {
+  const n = Number(days) || 0;
+  if (n >= 32) return "tone-rainbow shine";
+  if (n >= 7) return "tone-gold shine";
+  if (n >= 4) return "tone-green";
+  return "tone-white";
+}
+function todayTone(count, goal) {
+  const pct = (Number(count) || 0) / (Number(goal) || 1) * 100;
+  if (pct >= 100) return "tone-rainbow shine";
+  if (pct >= 80) return "tone-gold shine";
+  if (pct >= 20) return "tone-green";
+  return "tone-white";
 }
 function reviewSortKey(id) {
   const p = prog(id);
@@ -520,10 +534,10 @@ function renderHome() {
     </header>
     <div class="scroll">
       <div class="summary">
-        <p class="streak">連続 ${store.stats.streakDays || 0} 日</p>
+        <p class="streak ${streakTone(store.stats.streakDays)}">連続 ${store.stats.streakDays || 0} 日</p>
         <div class="goal-row">
-          <p class="goal">今日 ${shownToday()}問 <span>（目標 ${goal}問）</span></p>
-          <button class="unk ${store.ui.onlyUnknown ? "on" : ""}" type="button" data-act="toggle-unknown" aria-pressed="${store.ui.onlyUnknown ? "true" : "false"}"><span class="unk-box" aria-hidden="true"></span>わからない</button>
+          <p class="goal"><span class="today-n ${todayTone(shownToday(), goal)}">今日 ${shownToday()}問</span> <span class="goal-target">（目標 ${goal}問）</span></p>
+          <button class="unk ${store.ui.onlyUnknown ? "on" : ""}" type="button" data-act="toggle-unknown" aria-pressed="${store.ui.onlyUnknown ? "true" : "false"}"><span class="unk-box" aria-hidden="true"></span>苦手</button>
         </div>
         <form class="search-row" role="search">
           <input class="search-input" type="search" name="q" value="${esc(homeSearch.q)}" placeholder="キーワード" aria-label="キーワード" enterkeyhint="search" autocomplete="off">
@@ -626,7 +640,7 @@ function renderQuiz() {
   const actions = revealed ? `<div class="rates">
       <button type="button" class="g" data-act="rate" data-n="3"><span class="n">3</span><span class="t">すぐ解ける</span><span class="due">${dueLine(3)}</span></button>
       <button type="button" class="b" data-act="rate" data-n="2"><span class="n">2</span><span class="t">ふつう</span><span class="due">${dueLine(2)}</span></button>
-      <button type="button" class="r" data-act="rate" data-n="1"><span class="n">1</span><span class="t">わからない</span><span class="due">${dueLine(1)}</span></button>
+      <button type="button" class="r" data-act="rate" data-n="1"><span class="n">1</span><span class="t">苦手</span><span class="due">${dueLine(1)}</span></button>
     </div>
     <p class="hint">タップすると記録して、次の問題へ進みます。</p>`
     : `<div class="ox">
@@ -723,7 +737,7 @@ function renderHistory() {
       <span></span>
     </header>
     <div class="scroll">
-      <p class="streak hist-summary">連続 ${store.stats.streakDays || 0} 日　今日 ${shownToday()}問（目標 ${store.stats.dailyGoal || GOAL}問）</p>
+      <p class="streak hist-summary"><span class="${streakTone(store.stats.streakDays)}">連続 ${store.stats.streakDays || 0} 日</span>　<span class="${todayTone(shownToday(), store.stats.dailyGoal || GOAL)}">今日 ${shownToday()}問</span><span class="goal-target">（目標 ${store.stats.dailyGoal || GOAL}問）</span></p>
       ${cards}
     </div>
   </div>`;

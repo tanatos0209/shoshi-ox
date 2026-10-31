@@ -33,13 +33,25 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .brand-lock img{width:40px;height:40px;border-radius:12px}
 .icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--gold);display:grid;place-items:center;padding:0}
 .icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.home .icon-btn{color:#7a5610;border-color:rgba(122,86,16,.7);background:rgba(255,244,214,.72)}
+.home .icon-btn svg{stroke-width:2.35}
 .screen.home{height:100%;max-height:100%;min-height:0;overflow:hidden}
 .screen.home>.topbar,.screen.home>.filters{flex-shrink:0}
 .home .scroll{overflow:auto;display:flex;flex-direction:column;padding:8px 16px 12px;min-height:0;-webkit-overflow-scrolling:touch}
 .summary{padding:2px 4px 6px}
-.streak{margin:0;color:var(--sub);font-size:.92rem}
+.streak{margin:0;color:#fff;font-size:.92rem;font-weight:700}
 .goal-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
 .goal{margin:0;flex:1;min-width:0;font-size:1.45rem;font-weight:700;letter-spacing:.02em;line-height:1.2}
+.goal-target{font-size:1rem;font-weight:800;color:#fff}
+.tone-white{color:#fff}
+.tone-green{color:#3dce7a}
+.tone-gold,.tone-rainbow{background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:text-shine 2.4s linear infinite}
+.tone-gold{background-image:linear-gradient(100deg,#a8841c 0%,#fff6c8 42%,#e6c56a 58%,#a8841c 100%)}
+.tone-rainbow{background-image:linear-gradient(100deg,#ff5d73,#ffd15c,#5dff9a,#5dc8ff,#d15cff,#ff5d73)}
+.shine{position:relative;display:inline-block}
+.shine::after{content:"✦";position:absolute;right:-.85em;top:-.45em;font-size:.62em;line-height:1;color:#fff6c8;-webkit-text-fill-color:#fff6c8;background:none;animation:mastery-twinkle 1.4s ease-in-out infinite;pointer-events:none}
+@keyframes text-shine{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){.tone-gold,.tone-rainbow,.shine::after{animation:none}}
 .unk{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;border:0;background:transparent;color:#e23b3b;font-size:.72rem;font-weight:800;padding:2px 0;line-height:1}
 .unk-box{width:16px;height:16px;border:2px solid #e23b3b;border-radius:3px;background:transparent;display:grid;place-items:center;box-sizing:border-box}
 .unk.on .unk-box{background:#e23b3b}
@@ -48,7 +60,6 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .search-input{flex:1;min-width:0;height:36px;border:0;border-radius:12px;background:#fff;color:#112A20;font-size:.95rem;font-weight:600;padding:0 12px}
 .search-input::placeholder{color:#8aa094;font-weight:500}
 .search-go{flex:0 0 auto;height:36px;padding:0 12px;border:0;border-radius:12px;background:#2f6fed;color:#fff;font-size:.92rem;font-weight:800}
-.goal span{font-size:1rem;font-weight:600;color:var(--sub)}
 .bar{height:3px;border-radius:99px;background:rgba(200,169,106,.28);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
 .cta{width:100%;border:0;border-radius:14px;background:var(--gold);color:var(--gold-ink);font-size:1.05rem;font-weight:800;min-height:54px;padding:12px 16px}
