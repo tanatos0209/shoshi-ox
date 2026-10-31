@@ -180,7 +180,7 @@ function emptyStore() {
     version: 3,
     progress: {},
     stats: { streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" },
-    ui: { tintQuestionId: null, wrongOnly: false, bookmarksOnly: false, reviewOnly: false, freshOnly: false },
+    ui: { tintQuestionId: null, wrongOnly: false, bookmarksOnly: false, reviewOnly: false, freshOnly: false, onlyUnknown: false },
     drill: null,
     view: "home",
     sheet: null,
@@ -222,7 +222,7 @@ function migrate(raw) {
       log,
     });
   });
-  const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false, reviewOnly: false, freshOnly: false }, raw.ui || {});
+  const ui = Object.assign({ tintQuestionId: null, wrongOnly: false, bookmarksOnly: false, reviewOnly: false, freshOnly: false, onlyUnknown: false }, raw.ui || {});
   delete ui.mode;
   const stats = Object.assign({ streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" }, raw.stats || {});
   recomputeToday(stats, progress, false);
@@ -306,10 +306,16 @@ function matchesHomeFilter(q) {
   if (ui.freshOnly && isNew(q.id)) return true;
   return false;
 }
-/* On chips are a union. All off leaves the list unfiltered. */
+function onlyUnknown() {
+  return !!(store.ui && store.ui.onlyUnknown);
+}
+function isRatedUnknown(q) {
+  return Number(prog(q.id).understanding) === 1;
+}
+/* On chips are a union. All off leaves the list unfiltered. わからない is an extra AND. */
 function applyHomeFilters(list) {
-  if (!homeFiltersOn()) return list.slice();
-  return list.filter(matchesHomeFilter);
+  const base = homeFiltersOn() ? list.filter(matchesHomeFilter) : list.slice();
+  return onlyUnknown() ? base.filter(isRatedUnknown) : base;
 }
 function todayQueue() {
   const base = applyHomeFilters(QUESTIONS);
@@ -322,7 +328,7 @@ function todayQueue() {
     else rest.push(q);
   });
   review.sort((a, b) => reviewSortKey(a.id) < reviewSortKey(b.id) ? -1 : reviewSortKey(a.id) > reviewSortKey(b.id) ? 1 : 0);
-  if (!homeFiltersOn()) return review.concat(fresh);
+  if (!homeFiltersOn()) return onlyUnknown() ? review.concat(rest) : review.concat(fresh);
   return review.concat(fresh, rest);
 }
 function reviewSortKey(id) {
@@ -508,7 +514,10 @@ function renderHome() {
     <div class="scroll">
       <div class="summary">
         <p class="streak">連続 ${store.stats.streakDays || 0} 日</p>
-        <p class="goal">今日 ${shownToday()}問 <span>（目標 ${goal}問）</span></p>
+        <div class="goal-row">
+          <p class="goal">今日 ${shownToday()}問 <span>（目標 ${goal}問）</span></p>
+          <button class="unk ${store.ui.onlyUnknown ? "on" : ""}" type="button" data-act="toggle-unknown" aria-pressed="${store.ui.onlyUnknown ? "true" : "false"}"><span class="unk-box" aria-hidden="true"></span>わからない</button>
+        </div>
         <form class="search-row" role="search">
           <input class="search-input" type="search" name="q" value="${esc(homeSearch.q)}" placeholder="キーワード" aria-label="キーワード" enterkeyhint="search" autocomplete="off">
           <button class="search-go" type="submit">🔍 検索</button>
@@ -858,7 +867,17 @@ document.getElementById("app").addEventListener("click", e => {
   if (act === "start-today") { startDrill(todayQueue().map(q => q.id), "今日の学習"); return; }
   if (act === "start-random") { startRandom(); return; }
   if (act === "start-subject") { startDrill(applyHomeFilters(qsIn(b.dataset.subject)).map(q => q.id), b.dataset.subject); return; }
-  if (act === "start-field") { startDrill(qsIn(b.dataset.subject, b.dataset.field).map(q => q.id), b.dataset.subject + "・" + b.dataset.field); return; }
+  if (act === "toggle-unknown") {
+    if (!store.ui) store.ui = {};
+    store.ui.onlyUnknown = !store.ui.onlyUnknown;
+    save(); render();
+    return;
+  }
+  if (act === "start-field") {
+    const fieldQs = qsIn(b.dataset.subject, b.dataset.field).filter(q => !onlyUnknown() || isRatedUnknown(q));
+    startDrill(fieldQs.map(q => q.id), b.dataset.subject + "・" + b.dataset.field);
+    return;
+  }
   if (act === "quiz-back") { store.view = "home"; store.drill = null; save(); render(); return; }
   if (act === "quiz-history") {
     const q = currentQ();
@@ -908,7 +927,15 @@ function startRandom() {
     save(); render();
     return;
   }
-  const ids = QUESTIONS.map(q => q.id);
+  let ids = QUESTIONS.map(q => q.id);
+  if (onlyUnknown()) ids = ids.filter(id => Number(prog(id).understanding) === 1);
+  if (!ids.length) {
+    store.toast = "該当する問題はまだありません。";
+    store.view = "home";
+    store.sheet = null;
+    save(); render();
+    return;
+  }
   for (let i = ids.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const t = ids[i];

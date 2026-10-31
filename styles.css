@@ -38,7 +38,12 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .home .scroll{overflow:auto;display:flex;flex-direction:column;padding:8px 16px 12px;min-height:0;-webkit-overflow-scrolling:touch}
 .summary{padding:2px 4px 6px}
 .streak{margin:0;color:var(--sub);font-size:.92rem}
-.goal{margin:0 0 6px;font-size:1.55rem;font-weight:700;letter-spacing:.02em;line-height:1.2}
+.goal-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
+.goal{margin:0;flex:1;min-width:0;font-size:1.45rem;font-weight:700;letter-spacing:.02em;line-height:1.2}
+.unk{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;border:0;background:transparent;color:#e23b3b;font-size:.72rem;font-weight:800;padding:2px 0;line-height:1}
+.unk-box{width:16px;height:16px;border:2px solid #e23b3b;border-radius:3px;background:transparent;display:grid;place-items:center;box-sizing:border-box}
+.unk.on .unk-box{background:#e23b3b}
+.unk.on .unk-box::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
 .search-row{display:flex;gap:8px;margin:0 0 6px}
 .search-input{flex:1;min-width:0;height:36px;border:0;border-radius:12px;background:#fff;color:#112A20;font-size:.95rem;font-weight:600;padding:0 12px}
 .search-input::placeholder{color:#8aa094;font-weight:500}
