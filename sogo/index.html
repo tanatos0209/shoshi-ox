@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#1A1C1F"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="司法書士総合"/>
+<title>AI司法書士試験総合アプリ</title>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="icon" href="icon-192.png"/>
+<style>
+:root{--bg:#1A1C1F;--card:#1A1C1F;--gold:#C9A227;--text:#F5F5F5;--muted:#9AA0A6}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;min-height:100dvh;padding:max(16px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
+header{text-align:center;margin:12px 0 20px}
+h1{font-size:1.15rem;font-weight:700;letter-spacing:.02em}
+.sub{margin-top:6px;color:var(--muted);font-size:.85rem}
+nav{display:flex;flex-direction:column;gap:12px;flex:1}
+a.card{display:flex;align-items:center;gap:14px;padding:16px 14px;border:1px solid var(--gold);border-radius:14px;background:var(--card);color:inherit;text-decoration:none;min-height:72px}
+a.card .icon{width:36px;height:36px;display:grid;place-items:center;color:var(--gold);flex-shrink:0}
+a.card .txt{flex:1;min-width:0}
+a.card .txt strong{display:block;font-size:1rem;color:#fff}
+a.card .txt span{display:block;margin-top:3px;font-size:.78rem;color:var(--muted)}
+a.card .chev{color:var(--gold);font-size:1.1rem}
+.view{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px}
+.view.show{display:flex}
+.view h2{font-size:1.25rem;color:var(--gold)}
+.view p{color:var(--muted)}
+button.back{margin-top:8px;padding:12px 28px;border-radius:999px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:.95rem}
+svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div id="home">
+<header>
+<h1>AI司法書士試験総合アプリ</h1>
+<p class="sub">学習ハブ</p>
+</header>
+<nav>
+<a class="card" href="#progress">
+<span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 14v3M12 11v6M16 8v9"/></svg></span>
+<span class="txt"><strong>進捗管理</strong><span>学習の進みを見る</span></span>
+<span class="chev">›</span>
+</a>
+<a class="card" href="#notes">
+<span class="icon"><svg viewBox="0 0 24 24"><path d="M4 5h11a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2V5z"/><path d="M17 5h3v14a2 2 0 0 1-2 2h-1"/><path d="M8 9h6M8 13h6"/></svg></span>
+<span class="txt"><strong>テキストまとめ</strong><span>要点を整理</span></span>
+<span class="chev">›</span>
+</a>
+<a class="card" href="https://tanatos0209.github.io/shoshi-ox/">
+<span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg></span>
+<span class="txt"><strong>択一対策</strong><span>既存の○×演習</span></span>
+<span class="chev">›</span>
+</a>
+<a class="card" href="#speed">
+<span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M12 5V3M9 4.5 10 6M15 4.5 14 6"/></svg></span>
+<span class="txt"><strong>スピードチェック</strong><span>瞬発力トレーニング</span></span>
+<span class="chev">›</span>
+</a>
+</nav>
+</div>
+<div id="progress" class="view"><h2>準備中</h2><p>進捗管理はこれから入れます。</p><button class="back" type="button" onclick="location.hash=''">ホームへ戻る</button></div>
+<div id="notes" class="view"><h2>準備中</h2><p>テキストまとめはこれから入れます。</p><button class="back" type="button" onclick="location.hash=''">ホームへ戻る</button></div>
+<div id="speed" class="view"><h2>準備中</h2><p>スピードチェックはこれから入れます。</p><button class="back" type="button" onclick="location.hash=''">ホームへ戻る</button></div>
+<script>
+function route(){
+  const h=(location.hash||'').replace('#','');
+  document.getElementById('home').style.display = (!h||h==='home')?'block':'none';
+  ['progress','notes','speed'].forEach(id=>{
+    document.getElementById(id).classList.toggle('show', h===id);
+  });
+}
+window.addEventListener('hashchange',route); route();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
