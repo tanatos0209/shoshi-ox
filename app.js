@@ -285,6 +285,13 @@ function masterRate(list) {
   const n = list.filter(q => prog(q.id).understanding === 3).length;
   return Math.round(n / list.length * 100);
 }
+function masteryBand(rate) {
+  if (rate >= 90) return "m-hi";
+  if (rate >= 60) return "m-mid";
+  if (rate >= 30) return "m-cool";
+  if (rate >= 1) return "m-low";
+  return "";
+}
 function counts(list) {
   let review = 0, fresh = 0;
   list.forEach(q => {
@@ -498,7 +505,7 @@ function renderHome() {
   const cards = SUBJECTS.map(s => {
     const list = qsIn(s.name);
     const rate = masterRate(list);
-    return `<button class="subj" type="button" data-act="open-subject" data-id="${s.id}">
+    return `<button class="subj ${masteryBand(rate)}" type="button" data-act="open-subject" data-id="${s.id}">
       <b>${esc(s.name)}</b>
       ${bar(rate)}
       <span class="meta-line">● マスター率: ${rate}%${list.length ? "" : " · 0問"}</span>

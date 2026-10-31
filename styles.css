@@ -57,6 +57,10 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .home .grid{flex:1;gap:10px;margin-top:8px;grid-template-rows:minmax(96px,1fr) minmax(96px,1fr)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .subj{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 12px 12px;color:var(--text);min-height:108px;display:flex;flex-direction:column;gap:8px}
+.subj.m-low{background:#4c2c32}
+.subj.m-cool{background:#243848}
+.subj.m-mid{background:#1a4a36}
+.subj.m-hi{background:#1c7a46}
 .subj b{font-size:.98rem}
 .subj .meta-line{margin-top:auto;color:var(--gold);font-size:.75rem;font-weight:700}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px calc(8px + env(safe-area-inset-bottom));flex-shrink:0}
