@@ -15,7 +15,8 @@
   --jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--jp);line-height:1.55;-webkit-text-size-adjust:100%}
+html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#7EB3D4 0%,#5B8FB8 46%,#4E86B0 100%);color:var(--text);font-family:var(--jp);line-height:1.55;-webkit-text-size-adjust:100%}
+html.quiz-on,body.quiz-on{background:var(--bg)}
 html{color-scheme:dark}
 body{font-size:16px}
 button,select{font-family:inherit;touch-action:manipulation}
@@ -131,9 +132,9 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .hist-item .ok{color:#5CD696}
 .hist-item .ng{color:#E15B5B}
 .hist-item .when{display:block;margin-top:4px;color:var(--sub);font-size:.88rem;font-weight:500}
-html.tint-3,body.tint-3{background:radial-gradient(880px 380px at 50% -8%,rgba(46,140,90,.35),transparent 62%),#082a16}
-html.tint-2,body.tint-2{background:radial-gradient(880px 380px at 50% -8%,rgba(80,140,190,.32),transparent 62%),#10202c}
-html.tint-1,body.tint-1{background:radial-gradient(880px 380px at 50% -8%,rgba(200,50,60,.38),transparent 62%),#30080e}
-body.tint-3 .subj,body.tint-3 .chip,body.tint-3 .random-btn,body.tint-3 .sheet,body.tint-3 .ox button{background:#104828}
-body.tint-2 .subj,body.tint-2 .chip,body.tint-2 .random-btn,body.tint-2 .sheet,body.tint-2 .ox button{background:#163044}
-body.tint-1 .subj,body.tint-1 .chip,body.tint-1 .random-btn,body.tint-1 .sheet,body.tint-1 .ox button{background:#4a1820}
+html.quiz-on.tint-3,body.quiz-on.tint-3{background:radial-gradient(880px 380px at 50% -8%,rgba(46,140,90,.35),transparent 62%),#082a16}
+html.quiz-on.tint-2,body.quiz-on.tint-2{background:radial-gradient(880px 380px at 50% -8%,rgba(80,140,190,.32),transparent 62%),#10202c}
+html.quiz-on.tint-1,body.quiz-on.tint-1{background:radial-gradient(880px 380px at 50% -8%,rgba(200,50,60,.38),transparent 62%),#30080e}
+body.quiz-on.tint-3 .ox button{background:#104828}
+body.quiz-on.tint-2 .ox button{background:#163044}
+body.quiz-on.tint-1 .ox button{background:#4a1820}

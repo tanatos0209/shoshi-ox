@@ -459,14 +459,15 @@ function ratingOf(id) {
   return n >= 1 && n <= 3 ? n : 0;
 }
 function applyTint() {
-  const n = ratingOf(store.ui && store.ui.tintQuestionId);
+  const quiz = store.view === "quiz" && !!store.drill;
+  const n = quiz ? ratingOf(store.ui && store.ui.tintQuestionId) : 0;
   for (let i = 1; i <= 3; i++) {
-    const on = n === i;
+    const on = quiz && n === i;
     document.documentElement.classList.toggle("tint-" + i, on);
     document.body.classList.toggle("tint-" + i, on);
   }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", n ? TINT_PAGE[n] : "#0D231A");
+  if (meta) meta.setAttribute("content", quiz ? (n ? TINT_PAGE[n] : "#0D231A") : "#5B8FB8");
 }
 
 function esc(s) {
