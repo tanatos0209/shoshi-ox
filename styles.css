@@ -48,10 +48,8 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .tone-gold,.tone-rainbow{background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:text-shine 2.4s linear infinite}
 .tone-gold{background-image:linear-gradient(100deg,#a8841c 0%,#fff6c8 42%,#e6c56a 58%,#a8841c 100%)}
 .tone-rainbow{background-image:linear-gradient(100deg,#ff5d73,#ffd15c,#5dff9a,#5dc8ff,#d15cff,#ff5d73)}
-.shine{position:relative;display:inline-block}
-.shine::after{content:"✦";position:absolute;right:-.85em;top:-.45em;font-size:.62em;line-height:1;color:#fff6c8;-webkit-text-fill-color:#fff6c8;background:none;animation:mastery-twinkle 1.4s ease-in-out infinite;pointer-events:none}
 @keyframes text-shine{0%{background-position:100% 0}100%{background-position:-100% 0}}
-@media (prefers-reduced-motion:reduce){.tone-gold,.tone-rainbow,.shine::after{animation:none}}
+@media (prefers-reduced-motion:reduce){.tone-gold,.tone-rainbow{animation:none}}
 .unk{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;border:0;background:transparent;color:#e23b3b;font-size:.72rem;font-weight:800;padding:2px 0;line-height:1}
 .unk-box{width:16px;height:16px;border:2px solid #e23b3b;border-radius:3px;background:transparent;display:grid;place-items:center;box-sizing:border-box}
 .unk.on .unk-box{background:#e23b3b}

@@ -340,15 +340,15 @@ function todayQueue() {
 }
 function streakTone(days) {
   const n = Number(days) || 0;
-  if (n >= 32) return "tone-rainbow shine";
-  if (n >= 7) return "tone-gold shine";
+  if (n >= 32) return "tone-rainbow";
+  if (n >= 7) return "tone-gold";
   if (n >= 4) return "tone-green";
   return "tone-white";
 }
 function todayTone(count, goal) {
   const pct = (Number(count) || 0) / (Number(goal) || 1) * 100;
-  if (pct >= 100) return "tone-rainbow shine";
-  if (pct >= 80) return "tone-gold shine";
+  if (pct >= 100) return "tone-rainbow";
+  if (pct >= 80) return "tone-gold";
   if (pct >= 20) return "tone-green";
   return "tone-white";
 }
