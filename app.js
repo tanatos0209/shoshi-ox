@@ -370,7 +370,7 @@ function sheetHtml() {
   }).join("");
   return `<div class="backdrop" data-act="close-sheet"></div>
     <div class="sheet" role="dialog" aria-label="${esc(s.name)}">
-      <div class="sheet-h"><h2>${esc(s.name)}（全${s.fields.length}科目）</h2><button type="button" data-act="close-sheet" aria-label="閉じる">✕</button></div>
+      <div class="sheet-h"><h2>${esc(s.name)}（全${s.fields.length}分野）</h2><button type="button" data-act="close-sheet" aria-label="閉じる">✕</button></div>
       <button class="cta" type="button" data-act="start-subject" data-subject="${esc(s.name)}" ${list.length ? "" : "disabled"}>▶ ${esc(s.name)}をまとめて開始</button>
       <p class="cta-sub">復習待ち: ${c.review}問 / 未解答: ${c.fresh}問</p>
       ${rows}
