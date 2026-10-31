@@ -70,6 +70,7 @@ function emptyStore() {
     view: "home",
     sheet: null,
     historyOpen: false,
+    historyQuestionId: "",
   };
 }
 function dayKey(d) {
@@ -118,7 +119,8 @@ function migrate(raw) {
     drill: raw.version >= 3 ? raw.drill || null : null,
     view: raw.version >= 3 && raw.view ? raw.view : "home",
     sheet: null,
-    historyOpen: false,
+    historyOpen: !!raw.historyOpen,
+    historyQuestionId: raw.historyQuestionId || "",
   };
 }
 function load() {
@@ -446,9 +448,10 @@ function slashDay(iso) {
   const get = type => parts.find(p => p.type === type).value;
   return `${get("year")}/${get("month")}/${get("day")} ${get("hour")}:${get("minute")}`;
 }
-function historyGroups() {
+function historyGroups(onlyId) {
   const groups = [];
   QUESTIONS.forEach(q => {
+    if (onlyId && q.id !== onlyId) return;
     const p = store.progress[q.id];
     if (!p) return;
     const logs = (p.log || []).filter(e => e && (e.at || e.correct != null));
@@ -464,13 +467,13 @@ function historyGroups() {
         attempts.push({ at: e.at || "", correct: !!e.correct, understanding: u });
       });
     }
-    groups.push({ first: attempts[0].at || "", attempts });
+    groups.push({ id: q.id, first: attempts[0].at || "", attempts });
   });
   groups.sort((a, b) => String(a.first).localeCompare(String(b.first)));
   return groups;
 }
 function renderHistory() {
-  const cards = historyGroups().map(group => {
+  const cards = historyGroups(store.historyQuestionId || "").map(group => {
     const items = group.attempts.map(row => {
       const mark = row.correct ? "○" : "×";
       const tone = row.correct ? "ok" : "ng";
@@ -479,7 +482,7 @@ function renderHistory() {
       const when = day ? `<span class="when">演習日 ${esc(day)}</span>` : "";
       return `<div class="hist-item"><b><span class="${tone}">${mark}</span> ${u}</b>${when}</div>`;
     }).join("");
-    return `<section class="hist-card">${items}</section>`;
+    return `<section class="hist-card" data-qid="${esc(group.id)}">${items}</section>`;
   }).join("") || `<p class="cta-sub">まだ記録はありません。</p>`;
   app.innerHTML = `<div class="screen">
     <header class="qnav">
@@ -632,7 +635,14 @@ document.getElementById("app").addEventListener("click", e => {
   if (act === "start-subject") { startDrill(applyHomeFilters(qsIn(b.dataset.subject)).map(q => q.id), b.dataset.subject); return; }
   if (act === "start-field") { startDrill(qsIn(b.dataset.subject, b.dataset.field).map(q => q.id), b.dataset.subject + "・" + b.dataset.field); return; }
   if (act === "quiz-back") { store.view = "home"; store.drill = null; save(); render(); return; }
-  if (act === "quiz-history") { store.view = "history"; store.historyOpen = true; save(); render(); return; }
+  if (act === "quiz-history") {
+    const q = currentQ();
+    store.historyQuestionId = q ? q.id : "";
+    store.view = "history";
+    store.historyOpen = true;
+    save(); render();
+    return;
+  }
   if (act === "history-back") { store.view = store.drill ? "quiz" : "home"; save(); render(); return; }
   if (act === "bookmark") {
     const q = currentQ();
