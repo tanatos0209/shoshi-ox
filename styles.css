@@ -15,7 +15,8 @@
   --jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#7EB3D4 0%,#5B8FB8 46%,#4E86B0 100%);color:var(--text);font-family:var(--jp);line-height:1.55;-webkit-text-size-adjust:100%}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--jp);line-height:1.55;-webkit-text-size-adjust:100%}
+html.home-on,body.home-on{background:#1A1C1F}
 html.quiz-on,body.quiz-on{background:var(--bg)}
 html{color-scheme:dark}
 body{font-size:16px}
@@ -80,11 +81,12 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .subj b{font-size:.98rem}
 .subj .meta-line{margin-top:auto;color:var(--gold);font-size:.75rem;font-weight:700}
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px calc(8px + env(safe-area-inset-bottom));flex-shrink:0}
-.chip{min-height:44px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px}
+.chip,.random-btn{background:var(--card)}
+.chip{min-height:44px;border-radius:14px;border:1px solid var(--line);color:var(--text);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px}
 .chip .glyph{font-size:.95rem;line-height:1}
 .chip .fusen{width:28px;height:16px;object-fit:contain;display:block;flex:0 0 auto}
 .chip.on{border-color:var(--gold);color:var(--gold)}
-.random-btn{grid-column:1 / -1;width:100%;min-height:44px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 12px}
+.random-btn{grid-column:1 / -1;width:100%;min-height:44px;border-radius:14px;border:1px solid var(--line);color:var(--text);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 12px}
 .random-btn img{width:22px;height:22px;object-fit:cover;object-position:center;border-radius:50%;display:block;flex:0 0 22px}
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:480px;margin:0 auto;max-height:86dvh;overflow:auto;background:#163528;border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:var(--shadow)}
