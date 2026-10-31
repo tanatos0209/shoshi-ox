@@ -113,8 +113,11 @@ html.quiz-on,body.quiz-on,html.home-on,body.home-on{height:100dvh;overflow:hidde
 .set-preview{margin:16px 0 0;color:var(--text);font-size:.98rem;line-height:1.7}
 .nowrap{white-space:nowrap}
 .danger{width:100%;min-height:48px;margin-top:18px;border-radius:12px;border:1px solid var(--red);background:transparent;color:#ffb4b0;font-weight:800}
-.hist-item{padding:12px 0;border-top:1px solid rgba(212,175,106,.18)}
-.hist-item b{display:block}
+.hist-item{padding:14px 0;border-top:1px solid rgba(212,175,106,.18)}
+.hist-item b{display:block;font-size:1.05rem;font-weight:800}
+.hist-item .ok{color:#5CD696}
+.hist-item .ng{color:#E15B5B}
+.hist-item .when{display:block;margin-top:4px;color:var(--sub);font-size:.88rem;font-weight:500}
 html.tint-3,body.tint-3{background:radial-gradient(880px 380px at 50% -8%,rgba(46,140,90,.35),transparent 62%),#082a16}
 html.tint-2,body.tint-2{background:radial-gradient(880px 380px at 50% -8%,rgba(80,140,190,.32),transparent 62%),#10202c}
 html.tint-1,body.tint-1{background:radial-gradient(880px 380px at 50% -8%,rgba(200,50,60,.38),transparent 62%),#30080e}

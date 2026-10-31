@@ -429,12 +429,40 @@ function renderQuiz() {
   if (!revealed && !d.startedAt) d.startedAt = Date.now();
 }
 
+function slashDay(iso) {
+  const d = new Date(iso);
+  if (!iso || Number.isNaN(d.getTime())) return "";
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
+}
+function historyAttempts() {
+  const rows = [];
+  QUESTIONS.forEach(q => {
+    const p = store.progress[q.id];
+    if (!p) return;
+    const logs = (p.log || []).filter(e => e && (e.at || e.correct != null));
+    if (!logs.length) {
+      if (p.lastResult == null) return;
+      rows.push({ at: "", correct: !!p.lastResult, understanding: p.understanding || 0 });
+      return;
+    }
+    logs.forEach((e, i) => {
+      const latest = i === logs.length - 1;
+      const u = e.understanding || (latest ? p.understanding : 0) || 0;
+      rows.push({ at: e.at || "", correct: !!e.correct, understanding: u });
+    });
+  });
+  rows.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  return rows;
+}
 function renderHistory() {
-  const rows = QUESTIONS.filter(q => store.progress[q.id] && store.progress[q.id].lastResult != null).map(q => {
-    const p = prog(q.id);
-    const mark = p.lastResult ? "○" : "✕";
-    const u = p.understanding ? `理解度${p.understanding}` : "理解度—";
-    return `<div class="hist-item"><b>問 ${esc(q.id)} ${mark}　${u}</b><span>${esc(q.subject)}・${esc(q.category)}</span></div>`;
+  const rows = historyAttempts().map(row => {
+    const mark = row.correct ? "○" : "×";
+    const tone = row.correct ? "ok" : "ng";
+    const u = row.understanding ? `理解度${row.understanding}` : "理解度—";
+    const day = slashDay(row.at);
+    const when = day ? `<span class="when">演習日 ${esc(day)}</span>` : "";
+    return `<div class="hist-item"><b><span class="${tone}">${mark}</span> ${u}</b>${when}</div>`;
   }).join("") || `<p class="cta-sub">まだ記録はありません。</p>`;
   app.innerHTML = `<div class="screen">
     <header class="qnav">
@@ -688,6 +716,9 @@ function commitRate(n) {
   if (!d || !q || !d.revealed || !(n >= 1 && n <= 3)) return;
   const p = ensure(q.id);
   p.understanding = n;
+  p.log = p.log || [];
+  const last = p.log[p.log.length - 1];
+  if (last) last.understanding = n;
   if (p.lastResult == null) p.lastResult = d.correct;
   schedule(q.id, n);
   noteQuestion(q.id);
