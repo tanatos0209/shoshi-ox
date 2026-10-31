@@ -290,7 +290,7 @@ function masteryBand(rate) {
   if (rate >= 60) return "m-mid";
   if (rate >= 30) return "m-cool";
   if (rate >= 1) return "m-low";
-  return "";
+  return "m-zero";
 }
 function counts(list) {
   let review = 0, fresh = 0;
