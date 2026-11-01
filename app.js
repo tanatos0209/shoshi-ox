@@ -642,6 +642,163 @@ function sheetHtml() {
     </div>`;
 }
 
+/* Handwriting memo for the open question only. Not stored on `store`, so save() cannot persist it. */
+const scratch = { qid: "", ink: null };
+let scratchObserver = null;
+let scratchDrawing = null;
+
+function scratchQuestionId() {
+  if (store.view !== "quiz" || !store.drill || store.drill.revealed) return "";
+  const q = currentQ();
+  return q ? q.id : "";
+}
+function syncScratch() {
+  const id = scratchQuestionId();
+  if (scratch.qid === id) return;
+  scratch.qid = id;
+  scratch.ink = null;
+  scratchDrawing = null;
+}
+function clearScratchInk() {
+  scratch.ink = null;
+  scratchDrawing = null;
+  const canvas = document.querySelector(".scratch canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+function scratchBacking(w, h) {
+  if (scratch.ink && scratch.ink.width === w && scratch.ink.height === h) return scratch.ink;
+  const next = document.createElement("canvas");
+  next.width = w;
+  next.height = h;
+  if (scratch.ink) next.getContext("2d").drawImage(scratch.ink, 0, 0, w, h);
+  scratch.ink = next;
+  return next;
+}
+function bindScratch() {
+  if (scratchObserver) {
+    scratchObserver.disconnect();
+    scratchObserver = null;
+  }
+  scratchDrawing = null;
+  const canvas = document.querySelector(".scratch canvas");
+  if (!canvas) return;
+  const stroke = "#F6F3EA";
+  const sizeOf = () => {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    return {
+      w: Math.max(1, Math.round((rect.width || 0) * dpr)),
+      h: Math.max(1, Math.round((rect.height || 0) * dpr)),
+      dpr: dpr || 1
+    };
+  };
+  const fit = () => {
+    const { w, h } = sizeOf();
+    if (w < 2 || h < 2) return;
+    if (canvas.width === w && canvas.height === h && canvas.dataset.fit === "1") return;
+    const prev = scratch.ink;
+    canvas.width = w;
+    canvas.height = h;
+    canvas.dataset.fit = "1";
+    if (prev) canvas.getContext("2d").drawImage(prev, 0, 0, w, h);
+    if (prev && (prev.width !== w || prev.height !== h)) scratchBacking(w, h);
+  };
+  fit();
+  if (window.ResizeObserver) {
+    scratchObserver = new ResizeObserver(() => fit());
+    scratchObserver.observe(canvas);
+  }
+  const pointOf = e => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((e.clientX - rect.left) / (rect.width || 1)) * canvas.width,
+      y: ((e.clientY - rect.top) / (rect.height || 1)) * canvas.height
+    };
+  };
+  const widthOf = e => {
+    const dpr = sizeOf().dpr;
+    const pen = e.pointerType === "pen" && e.pressure > 0;
+    const pressure = pen ? e.pressure : (e.pointerType === "touch" ? 0.72 : 0.6);
+    return dpr * (2.8 + pressure * 2.15);
+  };
+  const paintDot = (ctx, x, y, radius) => {
+    ctx.fillStyle = stroke;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  const paintLine = (ctx, a, b, width) => {
+    ctx.strokeStyle = stroke;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  };
+  const surfaces = () => [canvas, scratchBacking(canvas.width, canvas.height)];
+  const drawDot = (p, width) => {
+    surfaces().forEach(target => paintDot(target.getContext("2d"), p.x, p.y, Math.max(0.8, width / 2)));
+  };
+  const drawLine = (a, b, width) => {
+    surfaces().forEach(target => paintLine(target.getContext("2d"), a, b, width));
+  };
+  const curveTo = (from, control, to, width) => {
+    surfaces().forEach(target => {
+      const ctx = target.getContext("2d");
+      ctx.strokeStyle = stroke;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
+      ctx.stroke();
+    });
+  };
+  const onDown = e => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (scratchDrawing) return;
+    if (canvas.width < 2 || canvas.height < 2) fit();
+    e.preventDefault();
+    e.stopPropagation();
+    if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+    const p = pointOf(e);
+    scratchDrawing = { id: e.pointerId, last: p, mid: p };
+    drawDot(p, widthOf(e));
+  };
+  const onMove = e => {
+    if (!scratchDrawing || e.pointerId !== scratchDrawing.id) return;
+    e.preventDefault();
+    const events = typeof e.getCoalescedEvents === "function" ? e.getCoalescedEvents() : [e];
+    const width = widthOf(e);
+    events.forEach(ev => {
+      const p = pointOf(ev);
+      const mid = { x: (scratchDrawing.last.x + p.x) / 2, y: (scratchDrawing.last.y + p.y) / 2 };
+      curveTo(scratchDrawing.mid, scratchDrawing.last, mid, width);
+      scratchDrawing.mid = mid;
+      scratchDrawing.last = p;
+    });
+  };
+  const onUp = e => {
+    if (!scratchDrawing || e.pointerId !== scratchDrawing.id) return;
+    if (e.preventDefault) e.preventDefault();
+    const end = scratchDrawing.last;
+    const mid = scratchDrawing.mid;
+    if (mid && end && (mid.x !== end.x || mid.y !== end.y)) drawLine(mid, end, widthOf(e));
+    scratchDrawing = null;
+  };
+  canvas.addEventListener("pointerdown", onDown, { passive: false });
+  canvas.addEventListener("pointermove", onMove, { passive: false });
+  canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointercancel", onUp);
+  canvas.addEventListener("lostpointercapture", onUp);
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+}
+
 function renderQuiz() {
   const d = store.drill;
   const q = QMAP[d.ids[d.index]];
@@ -693,11 +850,19 @@ function renderQuiz() {
     ${revealed ? "" : `<p class="next-rev">次回復習：${esc(reviewWhenLabel(q.id))}</p>`}
     <div class="qbody ${revealed ? "revealed" : ""}">
       <p class="stem">${q.questionHtml}</p>
+      ${revealed ? "" : `<div class="scratch">
+        <div class="scratch-bar">
+          <p class="scratch-hint">手書きメモ（画面切替で消えます）</p>
+          <button type="button" class="scratch-clear" data-act="scratch-clear" aria-label="手書きメモを消す">消す</button>
+        </div>
+        <canvas aria-label="手書きメモ"></canvas>
+      </div>`}
       ${body}
     </div>
     ${actions}
   </div>`;
   if (!revealed && !d.startedAt) d.startedAt = Date.now();
+  if (!revealed) bindScratch();
 }
 
 function slashDay(iso) {
@@ -786,6 +951,7 @@ function renderSettings() {
 }
 function render() {
   recomputeToday(store.stats, store.progress, true);
+  syncScratch();
   const quiz = store.view === "quiz" && !!store.drill;
   const home = !quiz && store.view !== "settings" && store.view !== "history";
   document.documentElement.classList.toggle("quiz-on", quiz);
@@ -940,6 +1106,7 @@ document.getElementById("app").addEventListener("click", e => {
     p.bookmarked = !p.bookmarked;
     save(); render(); return;
   }
+  if (act === "scratch-clear") { clearScratchInk(); return; }
   if (act === "quiz-prev") { moveDrill(-1); return; }
   if (act === "quiz-next") { moveDrill(1); return; }
   if (act === "pick") { reveal(b.dataset.val === "1"); return; }
