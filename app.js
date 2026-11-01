@@ -642,10 +642,13 @@ function sheetHtml() {
     </div>`;
 }
 
-/* Handwriting memo for the open question only. Not stored on `store`, so save() cannot persist it. */
-const scratch = { qid: "", ink: null };
-let scratchObserver = null;
-let scratchDrawing = null;
+/* Handwriting for the open question only. Kept off `store`, so save() cannot persist it.
+   The pad is one bitmap cleared by 消す. Stem marks are a stroke stack undone by 戻す. */
+const PAD_INK = "#F6F3EA";
+const STEM_INK = "#FF4D4D";
+const ink = { qid: "", pad: null, stem: [] };
+let inkObservers = [];
+let inkDrawing = null;
 
 function scratchQuestionId() {
   if (store.view !== "quiz" || !store.drill || store.drill.revealed) return "";
@@ -654,37 +657,91 @@ function scratchQuestionId() {
 }
 function syncScratch() {
   const id = scratchQuestionId();
-  if (scratch.qid === id) return;
-  scratch.qid = id;
-  scratch.ink = null;
-  scratchDrawing = null;
+  if (ink.qid === id) return;
+  ink.qid = id;
+  ink.pad = null;
+  ink.stem = [];
+  inkDrawing = null;
+}
+function padBacking(w, h) {
+  if (ink.pad && ink.pad.width === w && ink.pad.height === h) return ink.pad;
+  const next = document.createElement("canvas");
+  next.width = w;
+  next.height = h;
+  if (ink.pad) next.getContext("2d").drawImage(ink.pad, 0, 0, w, h);
+  ink.pad = next;
+  return next;
 }
 function clearScratchInk() {
-  scratch.ink = null;
-  scratchDrawing = null;
+  ink.pad = null;
+  if (inkDrawing && inkDrawing.kind === "pad") inkDrawing = null;
   const canvas = document.querySelector(".scratch canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
-function scratchBacking(w, h) {
-  if (scratch.ink && scratch.ink.width === w && scratch.ink.height === h) return scratch.ink;
-  const next = document.createElement("canvas");
-  next.width = w;
-  next.height = h;
-  if (scratch.ink) next.getContext("2d").drawImage(scratch.ink, 0, 0, w, h);
-  scratch.ink = next;
-  return next;
+function refreshStemUndo() {
+  const btn = document.querySelector("[data-act='stem-undo']");
+  if (btn) btn.disabled = !ink.stem.length;
 }
-function bindScratch() {
-  if (scratchObserver) {
-    scratchObserver.disconnect();
-    scratchObserver = null;
+function replayStem(canvas) {
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ink.stem.forEach(stroke => drawStored(ctx, stroke.points.map(p => ({
+    x: p.x * canvas.width,
+    y: p.y * canvas.height,
+    width: p.w * canvas.width
+  })), STEM_INK));
+}
+function undoStem() {
+  if (inkDrawing && inkDrawing.kind === "stem") return;
+  if (!ink.stem.length) return;
+  ink.stem.pop();
+  const canvas = document.querySelector(".stem-ink");
+  if (canvas && canvas.width > 1 && canvas.height > 1) replayStem(canvas);
+  refreshStemUndo();
+}
+function drawStored(ctx, pts, color) {
+  if (!pts.length) return;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.arc(pts[0].x, pts[0].y, Math.max(0.8, pts[0].width / 2), 0, Math.PI * 2);
+  ctx.fill();
+  if (pts.length < 2) return;
+  let mid = { x: pts[0].x, y: pts[0].y };
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const p = pts[i];
+    const nextMid = { x: (prev.x + p.x) / 2, y: (prev.y + p.y) / 2 };
+    ctx.lineWidth = p.width;
+    ctx.beginPath();
+    ctx.moveTo(mid.x, mid.y);
+    ctx.quadraticCurveTo(prev.x, prev.y, nextMid.x, nextMid.y);
+    ctx.stroke();
+    mid = nextMid;
   }
-  scratchDrawing = null;
-  const canvas = document.querySelector(".scratch canvas");
-  if (!canvas) return;
-  const stroke = "#F6F3EA";
+  const last = pts[pts.length - 1];
+  ctx.lineWidth = last.width;
+  ctx.beginPath();
+  ctx.moveTo(mid.x, mid.y);
+  ctx.lineTo(last.x, last.y);
+  ctx.stroke();
+}
+function bindInks() {
+  inkObservers.forEach(o => o.disconnect());
+  inkObservers = [];
+  inkDrawing = null;
+  const pad = document.querySelector(".scratch canvas");
+  const stem = document.querySelector(".stem-ink");
+  if (pad) attachInk(pad, "pad");
+  if (stem) attachInk(stem, "stem");
+  refreshStemUndo();
+}
+function attachInk(canvas, kind) {
+  const color = kind === "stem" ? STEM_INK : PAD_INK;
   const sizeOf = () => {
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -694,21 +751,54 @@ function bindScratch() {
       dpr: dpr || 1
     };
   };
+  const paintDot = (target, x, y, radius) => {
+    const ctx = target.getContext("2d");
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  const paintCurve = (target, from, control, to, width) => {
+    const ctx = target.getContext("2d");
+    ctx.strokeStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
+    ctx.stroke();
+  };
+  const paintLine = (target, a, b, width) => {
+    const ctx = target.getContext("2d");
+    ctx.strokeStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  };
+  const surfaces = () => kind === "pad" ? [canvas, padBacking(canvas.width, canvas.height)] : [canvas];
   const fit = () => {
     const { w, h } = sizeOf();
     if (w < 2 || h < 2) return;
     if (canvas.width === w && canvas.height === h && canvas.dataset.fit === "1") return;
-    const prev = scratch.ink;
+    const prev = kind === "pad" ? ink.pad : null;
     canvas.width = w;
     canvas.height = h;
     canvas.dataset.fit = "1";
-    if (prev) canvas.getContext("2d").drawImage(prev, 0, 0, w, h);
-    if (prev && (prev.width !== w || prev.height !== h)) scratchBacking(w, h);
+    if (kind === "pad") {
+      if (prev) canvas.getContext("2d").drawImage(prev, 0, 0, w, h);
+      if (prev && (prev.width !== w || prev.height !== h)) padBacking(w, h);
+    } else replayStem(canvas);
   };
   fit();
   if (window.ResizeObserver) {
-    scratchObserver = new ResizeObserver(() => fit());
-    scratchObserver.observe(canvas);
+    const observer = new ResizeObserver(() => fit());
+    observer.observe(canvas);
+    inkObservers.push(observer);
   }
   const pointOf = e => {
     const rect = canvas.getBoundingClientRect();
@@ -719,84 +809,63 @@ function bindScratch() {
   };
   const widthOf = e => {
     const dpr = sizeOf().dpr;
-    const pen = e.pointerType === "pen" && e.pressure > 0;
-    const pressure = pen ? e.pressure : (e.pointerType === "touch" ? 0.72 : 0.6);
-    return dpr * (2.8 + pressure * 2.15);
+    const pressure = e.pointerType === "pen" && e.pressure > 0 ? e.pressure : (e.pointerType === "touch" ? 0.72 : 0.6);
+    return kind === "stem" ? dpr * (1.8 + pressure * 1.5) : dpr * (2.8 + pressure * 2.15);
   };
-  const paintDot = (ctx, x, y, radius) => {
-    ctx.fillStyle = stroke;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  const paintLine = (ctx, a, b, width) => {
-    ctx.strokeStyle = stroke;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = width;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-  };
-  const surfaces = () => [canvas, scratchBacking(canvas.width, canvas.height)];
-  const drawDot = (p, width) => {
-    surfaces().forEach(target => paintDot(target.getContext("2d"), p.x, p.y, Math.max(0.8, width / 2)));
-  };
-  const drawLine = (a, b, width) => {
-    surfaces().forEach(target => paintLine(target.getContext("2d"), a, b, width));
-  };
-  const curveTo = (from, control, to, width) => {
-    surfaces().forEach(target => {
-      const ctx = target.getContext("2d");
-      ctx.strokeStyle = stroke;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.lineWidth = width;
-      ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
-      ctx.stroke();
+  const remember = (p, width) => {
+    if (kind !== "stem" || !inkDrawing) return;
+    inkDrawing.points.push({
+      x: p.x / canvas.width,
+      y: p.y / canvas.height,
+      w: width / canvas.width
     });
   };
   const onDown = e => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (scratchDrawing) return;
+    if (inkDrawing) return;
     if (canvas.width < 2 || canvas.height < 2) fit();
     e.preventDefault();
     e.stopPropagation();
     if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
     const p = pointOf(e);
-    scratchDrawing = { id: e.pointerId, last: p, mid: p };
-    drawDot(p, widthOf(e));
+    const width = widthOf(e);
+    inkDrawing = { id: e.pointerId, kind, last: p, mid: p, points: [] };
+    remember(p, width);
+    surfaces().forEach(target => paintDot(target, p.x, p.y, Math.max(0.8, width / 2)));
   };
   const onMove = e => {
-    if (!scratchDrawing || e.pointerId !== scratchDrawing.id) return;
+    if (!inkDrawing || inkDrawing.kind !== kind || e.pointerId !== inkDrawing.id) return;
     e.preventDefault();
     const events = typeof e.getCoalescedEvents === "function" ? e.getCoalescedEvents() : [e];
     const width = widthOf(e);
     events.forEach(ev => {
       const p = pointOf(ev);
-      const mid = { x: (scratchDrawing.last.x + p.x) / 2, y: (scratchDrawing.last.y + p.y) / 2 };
-      curveTo(scratchDrawing.mid, scratchDrawing.last, mid, width);
-      scratchDrawing.mid = mid;
-      scratchDrawing.last = p;
+      const mid = { x: (inkDrawing.last.x + p.x) / 2, y: (inkDrawing.last.y + p.y) / 2 };
+      surfaces().forEach(target => paintCurve(target, inkDrawing.mid, inkDrawing.last, mid, width));
+      inkDrawing.mid = mid;
+      inkDrawing.last = p;
+      remember(p, width);
     });
   };
   const onUp = e => {
-    if (!scratchDrawing || e.pointerId !== scratchDrawing.id) return;
+    if (!inkDrawing || inkDrawing.kind !== kind || e.pointerId !== inkDrawing.id) return;
     if (e.preventDefault) e.preventDefault();
-    const end = scratchDrawing.last;
-    const mid = scratchDrawing.mid;
-    if (mid && end && (mid.x !== end.x || mid.y !== end.y)) drawLine(mid, end, widthOf(e));
-    scratchDrawing = null;
+    const end = inkDrawing.last;
+    const mid = inkDrawing.mid;
+    const width = widthOf(e);
+    if (mid && end && (mid.x !== end.x || mid.y !== end.y)) {
+      surfaces().forEach(target => paintLine(target, mid, end, width));
+    }
+    if (kind === "stem" && inkDrawing.points.length) ink.stem.push({ points: inkDrawing.points.slice() });
+    inkDrawing = null;
+    if (kind === "stem") refreshStemUndo();
   };
   canvas.addEventListener("pointerdown", onDown, { passive: false });
   canvas.addEventListener("pointermove", onMove, { passive: false });
   canvas.addEventListener("pointerup", onUp);
   canvas.addEventListener("pointercancel", onUp);
   canvas.addEventListener("lostpointercapture", onUp);
-  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  canvas.addEventListener("contextmenu", ev => ev.preventDefault());
 }
 
 function renderQuiz() {
@@ -849,7 +918,17 @@ function renderQuiz() {
     ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
     ${revealed ? "" : `<p class="next-rev">次回復習：${esc(reviewWhenLabel(q.id))}</p>`}
     <div class="qbody ${revealed ? "revealed" : ""}">
-      <p class="stem">${q.questionHtml}</p>
+      ${revealed ? `<p class="stem">${q.questionHtml}</p>` : `<div class="stem-block">
+        <div class="stem-wrap">
+          <div class="stem-sheet">
+            <p class="stem">${q.questionHtml}</p>
+            <canvas class="stem-ink" aria-label="問題文への印"></canvas>
+          </div>
+        </div>
+        <div class="stem-tools">
+          <button type="button" class="stem-undo" data-act="stem-undo" disabled aria-label="問題文の印をひとつ戻す">戻す</button>
+        </div>
+      </div>`}
       ${revealed ? "" : `<div class="scratch">
         <div class="scratch-bar">
           <p class="scratch-hint">手書きメモ（画面切替で消えます）</p>
@@ -862,7 +941,7 @@ function renderQuiz() {
     ${actions}
   </div>`;
   if (!revealed && !d.startedAt) d.startedAt = Date.now();
-  if (!revealed) bindScratch();
+  if (!revealed) bindInks();
 }
 
 function slashDay(iso) {
@@ -1107,10 +1186,21 @@ document.getElementById("app").addEventListener("click", e => {
     save(); render(); return;
   }
   if (act === "scratch-clear") { clearScratchInk(); return; }
+  if (act === "stem-undo") { undoStem(); return; }
   if (act === "quiz-prev") { moveDrill(-1); return; }
   if (act === "quiz-next") { moveDrill(1); return; }
   if (act === "pick") { reveal(b.dataset.val === "1"); return; }
   if (act === "rate") { commitRate(Number(b.dataset.n)); return; }
+});
+document.addEventListener("keydown", e => {
+  if (e.key !== "z" && e.key !== "Z") return;
+  if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+  const tag = e.target && e.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if (store.view !== "quiz" || !store.drill || store.drill.revealed) return;
+  if (!ink.stem.length) return;
+  e.preventDefault();
+  undoStem();
 });
 document.getElementById("app").addEventListener("input", e => {
   const el = e.target.closest("[data-act='goal']");
