@@ -179,3 +179,14 @@ html.quiz-on.tint-1,body.quiz-on.tint-1{background:radial-gradient(880px 380px a
 body.quiz-on.tint-3 .ox button{background:#104828}
 body.quiz-on.tint-2 .ox button{background:#163044}
 body.quiz-on.tint-1 .ox button{background:#4a1820}
+.home .icon-btn.signed-in{background:#C8A96A;color:#1A1C1F;border-color:#C8A96A}
+.account-sheet{background:#1A1C1F;color:#F0F4F1;border-color:rgba(200,169,106,.45)}
+.account-sheet .sheet-h{margin-bottom:8px}
+.account-sheet .sheet-h h2{font-size:.98rem}
+.account-sheet .cta{min-height:44px;margin:0;font-size:.95rem}
+.sync-line{margin:0 0 8px;color:#c8c6c2;font-size:.82rem;line-height:1.5}
+.sync-mail{margin:0 0 6px;font-size:.92rem;font-weight:800;word-break:break-all}
+.sync-actions{display:flex;flex-direction:column;gap:8px}
+.sync-quiet,.sync-entry{width:100%;min-height:44px;border-radius:12px;border:1px solid rgba(200,169,106,.45);background:#1A1C1F;color:#F0F4F1;font-weight:800}
+.sync-entry{margin-top:18px}
+.sync-doc{color:#C8A96A;font-weight:800}

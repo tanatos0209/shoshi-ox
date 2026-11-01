@@ -2,11 +2,13 @@
  * - app.js（問題データ入り）・index.html・CSS・アイコンはネットワーク優先
  *   → 再読み込みで見た目と問題が更新される。オフライン時はキャッシュで動作
  */
-const CACHE = "shoshi-ox-shell-v63";
+const CACHE = "shoshi-ox-shell-v64";
 const SHELL = ["./", "./index.html", "./app.js", "./styles.css", "./manifest.webmanifest",
+  "./firebase-config.js", "./sync-merge.js", "./sync.js",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./random-vortex.png", "./fusen-icon.png"];
 const NETWORK_FIRST = [/\/app\.js$/, /\/index\.html$/, /\/$/, /\/manifest\.webmanifest$/,
-  /\/styles\.css$/, /\/icon-.*\.png$/, /\/apple-touch-icon\.png$/, /\/random-vortex\.png$/, /\/fusen-icon\.png$/];
+  /\/styles\.css$/, /\/firebase-config\.js$/, /\/sync-merge\.js$/, /\/sync\.js$/,
+  /\/icon-.*\.png$/, /\/apple-touch-icon\.png$/, /\/random-vortex\.png$/, /\/fusen-icon\.png$/];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
