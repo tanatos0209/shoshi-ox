@@ -246,7 +246,7 @@ function migrate(raw) {
   delete ui.mode;
   const stats = Object.assign({ streakDays: 0, todayCount: 0, todayIds: [], dailyGoal: GOAL, lastDate: "" }, raw.stats || {});
   recomputeToday(stats, progress, false);
-  return {
+  const next = {
     version: 3,
     progress,
     stats,
@@ -257,6 +257,13 @@ function migrate(raw) {
     historyOpen: !!raw.historyOpen,
     historyQuestionId: raw.historyQuestionId || "",
   };
+  /* Keep fields this version does not know (handwriting memos and later keys). */
+  const retired = { understanding: 1, history: 1, sessions: 1, current: 1, toast: 1, settingsFrom: 1 };
+  Object.keys(raw || {}).forEach(key => {
+    if (Object.prototype.hasOwnProperty.call(next, key) || retired[key]) return;
+    next[key] = raw[key];
+  });
+  return next;
 }
 function load() {
   try {
@@ -276,9 +283,13 @@ let store = load();
   recomputeToday(store.stats, store.progress, false);
   if (rawCount !== store.stats.todayCount) save();
 }
-function save() {
+function save(opts) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
   catch (e) { console.warn("履歴の保存に失敗しました", e); }
+  if (opts && opts.remote) return;
+  try {
+    if (window.ShoshiSync && window.ShoshiSync.noteLocalEdit) window.ShoshiSync.noteLocalEdit();
+  } catch (e) { console.warn("同期の記録に失敗しました", e); }
 }
 function prog(id) { return store.progress[id] || blankProgress(); }
 function ensure(id) {
@@ -551,7 +562,7 @@ function renderHome() {
     <header class="topbar">
       <div class="brand-lock"><img src="icon-192.png" width="40" height="40" alt=""><h1>司法書士 AI択一対策</h1></div>
       <button class="icon-btn" type="button" aria-label="設定" data-act="open-settings">${iconGear()}</button>
-      <button class="icon-btn" type="button" aria-label="プロフィール" data-act="noop">${iconUser()}</button>
+      <button class="icon-btn${syncStatus.signedIn ? " signed-in" : ""}" type="button" aria-label="${syncStatus.signedIn ? "クラウド同期、ログイン済み" : "クラウド同期"}" data-act="open-account">${iconUser()}</button>
     </header>
     <div class="scroll">
       <div class="summary">
@@ -595,6 +606,17 @@ function searchSnippet(html) {
   return t.length > 42 ? t.slice(0, 42) + "…" : t;
 }
 let homeSearch = { q: "", open: false };
+let accountOpen = false;
+let syncStatus = {
+  configured: false,
+  ready: false,
+  signedIn: false,
+  email: "",
+  name: "",
+  phase: "off",
+  message: "この端末だけに保存しています。",
+  updatedAt: 0
+};
 function runHomeSearch(raw) {
   homeSearch.q = String(raw || "");
   homeSearch.open = true;
@@ -1022,6 +1044,8 @@ function renderSettings() {
       <p id="goal-note" class="set-note">自分で決められます。<br>試験の決まりではありません。</p>
       <p class="set-preview">ホームの表示は<br><span class="nowrap">今日 <span class="set-n">${shownToday()}</span>問（目標 <span class="set-g">${goal}</span>問）</span>です。</p>
       <p class="set-note">その日に初めて解いた問題だけを数えます。<br>同じ問題の再解答は入りません。<br>ランダムで解いた問題も入りません。</p>
+      <button class="sync-entry" type="button" data-act="open-account">クラウド同期</button>
+      <p class="set-note">Googleアカウントで、別の端末と学習記録を合わせます。</p>
       <button class="danger" type="button" data-act="reset-data">学習データを消去</button>
       <p class="set-note">解答・理解度・付箋・復習予定を消します。<br>目標問数は残します。</p>
       ${store.toast ? `<p class="toast">${esc(store.toast)}</p>` : ""}
@@ -1043,7 +1067,36 @@ function render() {
   else if (store.view === "quiz" && store.drill) renderQuiz();
   else if (store.view === "history") renderHistory();
   else renderHome();
+  if (accountOpen) app.insertAdjacentHTML("beforeend", accountSheetHtml());
   applyTint();
+}
+function accountSheetHtml() {
+  const s = syncStatus || {};
+  let body;
+  if (!s.configured) {
+    body = `<p class="sync-line">鍵が未設定です。解答・理解度・復習・付箋・絞り込み・目標は、この端末に残ります。</p>
+      <p class="sync-line"><a class="sync-doc" href="FIREBASE.md">設定手順</a>に沿って、進捗アプリと同じFirebaseを入れます。</p>`;
+  } else if (!s.signedIn) {
+    const notice = (s.phase === "error" || s.phase === "offline" || s.phase === "saving") && s.message
+      ? `<p class="sync-line">${esc(s.message)}</p>` : "";
+    body = s.ready
+      ? `<p class="sync-line">同じGoogleアカウントの別の端末と、解答・理解度・復習・付箋・絞り込み・目標を揃えます。オフラインでもそのまま使えます。</p>
+      <button class="cta" type="button" data-act="google-sign-in">Googleでログイン</button>
+      ${notice}`
+      : `<p class="sync-line">${esc(s.message || "同期の準備をしています…")}</p>`;
+  } else {
+    body = `<p class="sync-mail">${esc(s.email || s.name || "ログイン中")}</p>
+      <p class="sync-line">${esc(s.message || "同期済み")}</p>
+      <div class="sync-actions">
+        <button class="cta" type="button" data-act="sync-now">今すぐ同期</button>
+        <button class="sync-quiet" type="button" data-act="google-sign-out">ログアウト</button>
+      </div>`;
+  }
+  return `<div class="backdrop" data-act="close-account"></div>
+    <div class="sheet account-sheet" role="dialog" aria-modal="true" aria-label="クラウド同期">
+      <div class="sheet-h"><h2>クラウド同期</h2><button type="button" data-act="close-account" aria-label="閉じる">✕</button></div>
+      ${body}
+    </div>`;
 }
 
 function startTodayDrill(ids) {
@@ -1117,6 +1170,25 @@ document.getElementById("app").addEventListener("click", e => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   if (act === "noop") return;
+  if (act === "open-account") {
+    homeSearch.open = false;
+    accountOpen = true;
+    render();
+    return;
+  }
+  if (act === "close-account") { accountOpen = false; render(); return; }
+  if (act === "google-sign-in") {
+    if (window.ShoshiSync && window.ShoshiSync.signIn) window.ShoshiSync.signIn();
+    return;
+  }
+  if (act === "google-sign-out") {
+    if (window.ShoshiSync && window.ShoshiSync.signOut) window.ShoshiSync.signOut();
+    return;
+  }
+  if (act === "sync-now") {
+    if (window.ShoshiSync && window.ShoshiSync.syncNow) window.ShoshiSync.syncNow();
+    return;
+  }
   if (act === "open-settings") {
     store.settingsFrom = store.view === "settings" ? (store.settingsFrom || "home") : store.view;
     store.sheet = null;
@@ -1417,5 +1489,48 @@ function consumeProgressDeepLink() {
   }
   return true;
 }
+
+const CLOUD_SKIP = { view: 1, drill: 1, sheet: 1, historyOpen: 1, historyQuestionId: 1, toast: 1, settingsFrom: 1 };
+function cloudSnapshot() {
+  const payload = {};
+  Object.keys(store).forEach(key => {
+    if (!CLOUD_SKIP[key]) payload[key] = store[key];
+  });
+  return payload;
+}
+function applyCloudPayload(payload) {
+  const keep = {
+    view: store.view,
+    drill: store.drill,
+    sheet: store.sheet,
+    historyOpen: store.historyOpen,
+    historyQuestionId: store.historyQuestionId,
+    toast: store.toast,
+    settingsFrom: store.settingsFrom
+  };
+  let raw = payload || {};
+  try { raw = JSON.parse(JSON.stringify(raw)); } catch (e) { raw = payload || {}; }
+  const next = migrate(Object.assign({ version: 3 }, raw));
+  Object.keys(store).forEach(key => {
+    if (!Object.prototype.hasOwnProperty.call(next, key) && !CLOUD_SKIP[key]) delete store[key];
+  });
+  Object.keys(next).forEach(key => {
+    if (!CLOUD_SKIP[key]) store[key] = next[key];
+  });
+  Object.assign(store, keep);
+  save({ remote: true });
+  render();
+}
+function onSyncStatus(next) {
+  const signedChanged = !!syncStatus.signedIn !== !!(next && next.signedIn);
+  syncStatus = next || syncStatus;
+  if (accountOpen || signedChanged) render();
+}
+window.ShoshiOx = {
+  storageKey: STORAGE_KEY,
+  snapshot: cloudSnapshot,
+  apply: applyCloudPayload,
+  onSyncStatus: onSyncStatus
+};
 
 if (!consumeProgressDeepLink()) render();
