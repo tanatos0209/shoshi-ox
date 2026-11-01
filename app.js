@@ -781,6 +781,9 @@ function render() {
   applyTint();
 }
 
+function startTodayDrill(ids) {
+  startDrill(ids || todayQueue().map(q => q.id), "今日の学習");
+}
 function startDrill(ids, title, opts) {
   const unique = [...new Set(ids)];
   if (!unique.length) {
@@ -886,7 +889,7 @@ document.getElementById("app").addEventListener("click", e => {
   if (act === "toggle-marks") { store.ui.bookmarksOnly = !store.ui.bookmarksOnly; save(); render(); return; }
   if (act === "close-search") { homeSearch.open = false; render(); return; }
   if (act === "start-one") { homeSearch.open = false; startDrill([b.dataset.id], "問" + b.dataset.id); return; }
-  if (act === "start-today") { startDrill(todayQueue().map(q => q.id), "今日の学習"); return; }
+  if (act === "start-today") { startTodayDrill(); return; }
   if (act === "start-random") { startRandom(); return; }
   if (act === "start-subject") { startDrill(applyHomeFilters(qsIn(b.dataset.subject)).map(q => q.id), b.dataset.subject); return; }
   if (act === "toggle-unknown") {
@@ -1061,4 +1064,81 @@ function noteQuestion(id) {
   store.ui.tintQuestionId = id;
 }
 
-render();
+/* Progress-hub deep link (shoshi-progress 「今日の学習を開始」 → 択一対策).
+   Contract, query or hash (query wins per key):
+     ?from=progress&start=today&scope=review
+     https://tanatos0209.github.io/shoshi-ox/?from=progress&start=today&scope=review
+   start=today runs 「今日の学習を開始」 (home chips and 苦手 are ignored while the
+   queue is built, then restored). scope=review then selects quiz 「復習待ち」.
+   Zero due reviews keep that today queue (review first, then unanswered).
+   from is a source marker and does not change behavior.
+   Those three params are removed with replaceState after they are read. */
+const DEEP_LINK_KEYS = ["from", "start", "scope"];
+function deepLinkParams() {
+  try {
+    const query = new URLSearchParams(location.search);
+    const hash = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
+    const pick = key => {
+      const q = query.get(key);
+      if (q != null && q !== "") return q;
+      const h = hash.get(key);
+      return h == null ? "" : h;
+    };
+    return { from: pick("from"), start: pick("start"), scope: pick("scope") };
+  } catch (e) {
+    return { from: "", start: "", scope: "" };
+  }
+}
+function stripDeepLinkParams() {
+  try {
+    const url = new URL(location.href);
+    DEEP_LINK_KEYS.forEach(key => url.searchParams.delete(key));
+    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+    let hashHad = false;
+    DEEP_LINK_KEYS.forEach(key => {
+      if (!hashParams.has(key)) return;
+      hashParams.delete(key);
+      hashHad = true;
+    });
+    const qs = url.searchParams.toString();
+    const hash = hashHad ? (hashParams.toString() ? "#" + hashParams.toString() : "") : url.hash;
+    history.replaceState(null, "", url.pathname + (qs ? "?" + qs : "") + hash);
+  } catch (e) { /* leave the URL if history is unavailable */ }
+}
+function todayIdsIgnoringHomeFilters() {
+  const ui = store.ui || (store.ui = {});
+  const saved = {
+    wrongOnly: !!ui.wrongOnly,
+    bookmarksOnly: !!ui.bookmarksOnly,
+    reviewOnly: !!ui.reviewOnly,
+    freshOnly: !!ui.freshOnly,
+    onlyUnknown: !!ui.onlyUnknown,
+  };
+  ui.wrongOnly = false;
+  ui.bookmarksOnly = false;
+  ui.reviewOnly = false;
+  ui.freshOnly = false;
+  ui.onlyUnknown = false;
+  try {
+    return todayQueue().map(q => q.id);
+  } finally {
+    ui.wrongOnly = saved.wrongOnly;
+    ui.bookmarksOnly = saved.bookmarksOnly;
+    ui.reviewOnly = saved.reviewOnly;
+    ui.freshOnly = saved.freshOnly;
+    ui.onlyUnknown = saved.onlyUnknown;
+  }
+}
+function consumeProgressDeepLink() {
+  const link = deepLinkParams();
+  if (link.start !== "today") return false;
+  stripDeepLinkParams();
+  startTodayDrill(todayIdsIgnoringHomeFilters());
+  if (link.scope === "review" && store.view === "quiz" && store.drill) {
+    const base = store.drill.baseIds && store.drill.baseIds.length ? store.drill.baseIds : store.drill.ids;
+    if (filteredIds(base, "review").length) applyScope("review");
+  }
+  return true;
+}
+
+if (!consumeProgressDeepLink()) render();

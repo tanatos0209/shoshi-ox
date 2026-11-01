@@ -3,7 +3,7 @@
 - 作成日: 2026-10-31（Asia/Tokyo）
 - 公開URL: https://tanatos0209.github.io/shoshi-ox/
 - リポジトリ: https://github.com/tanatos0209/shoshi-ox
-- 本番キャッシュ（時点）: `shoshi-ox-shell-v58`
+- 本番キャッシュ（時点）: `shoshi-ox-shell-v59`
 - 種別: 司法書士択一○× PWA（GitHub Pages）
 
 この文書は合意済みUI/UX・学習ロジック・問題追加ルールの完全バックアップである。実装・改修時は本仕様を優先し、矛盾する変更はユーザー確認後のみ行う。
